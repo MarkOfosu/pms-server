@@ -34,4 +34,5 @@ desktop.ini
 .db.sqlite
 .sessions.sqlite
 .pm2/
+.gitignore
 ```
