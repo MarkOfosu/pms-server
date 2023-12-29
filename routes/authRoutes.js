@@ -2,65 +2,68 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const db = require('../db/database');
-const verifyLogin = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
+const authenticateToken  = require('../middleware/authenticateToken');
 require('dotenv').config();
 
 const router = express.Router();
 
+// User Registration
 router.post('/register', async (req, res) => {
-    const {
-        First_name,
-        Last_name,
-        Email_address,
-         password 
-        } = req.body;
-
+    const { username, password, firstName, lastName, email, dateOfBirth, address } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    db.run(`INSERT INTO users (First_name,Last_name,Email_address,hashed_password) VALUES (?, ?,?,?)`, [First_name,Last_name, Email_address, hashedPassword], function(err) {
-        if (err) {
-            return res.status(400).send({ error: err.message });
-        }
-        res.status(201).send({ id: this.lastID });
+  
+    const query = 'INSERT INTO users (Username, hashed_password, First_name, Last_name, Email, DateOfBirth, Address) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.run(query, [username, hashedPassword, firstName, lastName, email, dateOfBirth, address], function(err) {
+      if (err) {
+        res.status(500).send('Error registering new user');
+      } else {
+        res.status(201).send(`New user created with ID ${this.lastID}`);
+      }
     });
-});
+  });
+  
 
+// User Login
 router.post('/login', (req, res) => {
-    const { email, password } = req.body;
-
-    db.get("SELECT * FROM users WHERE Email_address = ?", [email], (err, user) => {
-        if (err) {
-            return res.status(500).send("Internal Server Error");
-        }
-        if (!user) {
-            return res.status(401).send("Invalid email or password");
-        }
-        const isPasswordCorrect = bcrypt.compareSync(password, user.hashed_password);
-        if (!isPasswordCorrect) {
-            return res.status(401).send("Invalid email or password");
-        }
-
-        req.session.userId = user.Id; 
-        
-        res.status(200).json({ message: "Login successful" });
+    const { username, password } = req.body;
+    const query = 'SELECT * FROM users WHERE Username = ?';
+  
+    db.get(query, [username], async (err, user) => {
+      if (err) {
+        res.status(500).send('Error logging in');
+      } else if (!user || !await bcrypt.compare(password, user.hashed_password)) {
+        res.status(401).send('Invalid credentials');
+      } else {
+        const token = jwt.sign({ userId: user.Id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const updateQuery = 'UPDATE users SET token = ? WHERE Id = ?';
+        db.run(updateQuery, [token, user.Id], function(err) {
+          if (err) {
+            res.status(500).send('Error saving token');
+          } else {
+            res.json({ token });
+          }
+        });
+      }
     });
-});
+  });
 
 
 
-
-
-router.get('/users',verifyLogin, (req, res) => {
-    
-    db.all("SELECT Id, First_name, Last_name, Email_address FROM users", (err, rows) => {
+  router.get('/users', authenticateToken, (req, res) => {
+    db.all("SELECT UserId, Username, FirstName, LastName, Email, DateOfBirth, Address FROM users", (err, rows) => {
         if (err) {
             return res.status(500).json({ error: "Internal Server Error" });
         }
         const users = rows.map(row => {
             return {
-                id: row.Id,
-               FirstName: row.First_name,
-                LastName: row.Last_name, 
-                EmailAddress: row.Email_address                
+                id: row.UserId,
+                username: row.Username,
+                firstName: row.FirstName,
+                lastName: row.LastName, 
+                email: row.Email,
+                dateOfBirth: row.DateOfBirth,
+                address: row.Address                
             };
         });
 
@@ -68,15 +71,19 @@ router.get('/users',verifyLogin, (req, res) => {
     });
 });
 
-router.post('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            return res.status(500).send("Logout failed");
-        }
-        res.send("Logout successful");
-    });
-});
 
+
+router.post('/logout', authenticateToken, (req, res) => {
+    const updateQuery = 'UPDATE users SET token = NULL WHERE id = ?';
+    db.run(updateQuery, [req.user.userId], function(err) {
+      if (err) {
+        res.status(500).send('Error logging out');
+      } else {
+        res.send('Logged out successfully');
+      }
+    });
+  });
+  
 
 
 
