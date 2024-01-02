@@ -3,6 +3,8 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcrypt');
 
+require('dotenv').config();
+
 const dbPath = path.resolve(__dirname, 'db.sqlite');
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
@@ -13,7 +15,7 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
     // Create Users table
     db.run(`CREATE TABLE IF NOT EXISTS users (
         UserId INTEGER PRIMARY KEY AUTOINCREMENT,
-        Username TEXT NOT NULL UNIQUE,
+        UserName TEXT NOT NULL UNIQUE,
         Password TEXT NOT NULL,
         Email TEXT NOT NULL UNIQUE,
         FirstName TEXT NOT NULL,
@@ -73,20 +75,20 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
     )`);
 
     // Create admin user if it doesn't already exist
-    db.get("SELECT * FROM users WHERE Email = ?", ['admin@gmail.com'], (err, user) => {
-        if (err) {
-            return console.error(err.message);
-        }
-        if (!user) {
-            const hashedPassword = bcrypt.hashSync('Go!', 10);
-            db.run(`INSERT INTO users (Username, Password, Email, FirstName, LastName, JoinDate) VALUES (?, ?, ?, ?, ?, ?)`, ['admin', hashedPassword, 'admin@gmail.com', 'admin', 'admin', new Date().toISOString().split('T')[0]], function(err) {
-                if (err) {
-                    return console.error(err.message);
-                }
-                console.log(`Admin user created with id ${this.lastID}`);
-            });
-        }
-    });
+    // db.get("SELECT * FROM users WHERE Email = ?", ['admin@gmail.com'], (err, user) => {
+    //     if (err) {
+    //         return console.error(err.message);
+    //     }
+    //     if (!user) {
+    //         const hashedPassword = bcrypt.hashSync('Go!', 10);
+    //         db.run(`INSERT INTO users (Username, Password, Email, FirstName, LastName, JoinDate) VALUES (?, ?, ?, ?, ?, ?)`, ['admin', hashedPassword, 'mark@gmail.com', 'Mark', 'Ofosu', new Date().toISOString().split('T')[0]], function(err) {
+    //             if (err) {
+    //                 return console.error(err.message);
+    //             }
+    //             console.log(`Admin user created with id ${this.lastID}`);
+    //         });
+    //     }
+    // });
 });
 
 module.exports = db;

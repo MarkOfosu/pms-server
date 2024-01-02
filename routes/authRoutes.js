@@ -10,43 +10,43 @@ const router = express.Router();
 
 // User Registration
 router.post('/register', async (req, res) => {
-    const { username, password, firstName, lastName, email, dateOfBirth, address } = req.body;
+    const { userName, email, firstName, lastName, dateOfBirth, address, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-  
-    const query = 'INSERT INTO users (Username, hashed_password, First_name, Last_name, Email, DateOfBirth, Address) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.run(query, [username, hashedPassword, firstName, lastName, email, dateOfBirth, address], function(err) {
-      if (err) {
-        res.status(500).send('Error registering new user');
-      } else {
-        res.status(201).send(`New user created with ID ${this.lastID}`);
-      }
+
+    const query = 'INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.run(query, [userName, hashedPassword, firstName, lastName, email, dateOfBirth, address], function(err) {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ message: 'Error registering new user', error: err.message });
+        } else {
+            res.status(201).json({ message: `New user created with ID ${this.lastID}` });
+        }
     });
-  });
+});
   
 
 // User Login
-router.post('/login', (req, res) => {
-    const { username, password } = req.body;
+router.post('/login', async (req, res) => {
+    const { userName, password } = req.body;
     const query = 'SELECT * FROM users WHERE Username = ?';
   
-    db.get(query, [username], async (err, user) => {
+    db.get(query, [userName], async (err, user) => {
       if (err) {
         res.status(500).send('Error logging in');
-      } else if (!user || !await bcrypt.compare(password, user.hashed_password)) {
+      } else if (!user || !await bcrypt.compare(password, user.Password)) {
         res.status(401).send('Invalid credentials');
       } else {
-        const token = jwt.sign({ userId: user.Id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        const updateQuery = 'UPDATE users SET token = ? WHERE Id = ?';
-        db.run(updateQuery, [token, user.Id], function(err) {
-          if (err) {
-            res.status(500).send('Error saving token');
-          } else {
-            res.json({ token });
-          }
+        const token = jwt.sign({ name: user.FirstName }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: 'false', 
+            maxAge: 3600000 // 1 hour
         });
+        res.status(200).json({ message: 'Logged in successfully' });
       }
     });
-  });
+});
+
 
 
 
@@ -72,17 +72,10 @@ router.post('/login', (req, res) => {
 });
 
 
-
-router.post('/logout', authenticateToken, (req, res) => {
-    const updateQuery = 'UPDATE users SET token = NULL WHERE id = ?';
-    db.run(updateQuery, [req.user.userId], function(err) {
-      if (err) {
-        res.status(500).send('Error logging out');
-      } else {
-        res.send('Logged out successfully');
-      }
-    });
-  });
+  router.post('/logout', authenticateToken, (req, res) => {
+    res.clearCookie('token');
+    res.send('Logged out successfully');
+});
   
 
 

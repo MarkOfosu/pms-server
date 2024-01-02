@@ -3,6 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser'); 
 const authRoutes = require('./routes/authRoutes');
 const authenticateToken = require('./middleware/authenticateToken'); 
+const cookieParser = require('cookie-parser');
 
 require('dotenv').config(); 
 
@@ -10,10 +11,12 @@ const app = express();
 
 app.use(bodyParser.json()); 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+
 
 const corsOptions = {
-    origin:'localhost:3000' , 
-    credentials: true, 
+    origin: '*', 
+    credentials: true,
     optionsSuccessStatus: 200
 };
 
