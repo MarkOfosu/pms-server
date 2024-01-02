@@ -12,9 +12,10 @@ const router = express.Router();
 router.post('/register', async (req, res) => {
     const { userName, email, firstName, lastName, dateOfBirth, address, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
+    const joinDate = new Date().toISOString().slice(0, 10);
 
-    const query = 'INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.run(query, [userName, hashedPassword, firstName, lastName, email, dateOfBirth, address], function(err) {
+    const query = 'INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address, JoinDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    db.run(query, [userName, hashedPassword, firstName, lastName, email, dateOfBirth, address, joinDate], function(err) {
         if (err) {
             console.error(err);
             res.status(500).json({ message: 'Error registering new user', error: err.message });
