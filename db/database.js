@@ -22,7 +22,10 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         LastName TEXT NOT NULL,
         DateOfBirth DATE,
         Address TEXT,
-        JoinDate DATE
+        JoinDate DATE,
+        UserType INTEGER,
+        Image BLOB
+        
     )`);
 
     // Create Profiles table
@@ -41,6 +44,7 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
     )`);
 
     // Create Reservations table
+    //status: open, closed
     db.run(`CREATE TABLE IF NOT EXISTS reservations (
         ReservationID INTEGER PRIMARY KEY AUTOINCREMENT,
         UserID INTEGER NOT NULL,
@@ -74,21 +78,43 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         FOREIGN KEY(UserID) REFERENCES users(UserId)
     )`);
 
+    // Create Lap Swim Schedules table
+    db.run(`CREATE TABLE IF NOT EXISTS lap_swim_schedules (
+        ScheduleID INTEGER PRIMARY KEY AUTOINCREMENT,
+        Day TEXT,
+        Date DATE,
+        LaneNumber INTEGER,
+        Time TIME
+    )`);
+
     // Create admin user if it doesn't already exist
-    // db.get("SELECT * FROM users WHERE Email = ?", ['admin@gmail.com'], (err, user) => {
-    //     if (err) {
-    //         return console.error(err.message);
-    //     }
-    //     if (!user) {
-    //         const hashedPassword = bcrypt.hashSync('Go!', 10);
-    //         db.run(`INSERT INTO users (Username, Password, Email, FirstName, LastName, JoinDate) VALUES (?, ?, ?, ?, ?, ?)`, ['admin', hashedPassword, 'mark@gmail.com', 'Mark', 'Ofosu', new Date().toISOString().split('T')[0]], function(err) {
-    //             if (err) {
-    //                 return console.error(err.message);
-    //             }
-    //             console.log(`Admin user created with id ${this.lastID}`);
-    //         });
-    //     }
-    // });
+    db.get("SELECT * FROM users WHERE UserType = ?", [1030], (err, user) => {
+        if (err) {
+            console.error(err);
+        } else if (!user) {
+            const userName = process.env.ADMIN_USERNAME;
+            const password = process.env.ADMIN_PASSWORD;
+            const firstName = process.env.ADMIN_FIRST_NAME;
+            const lastName = process.env.ADMIN_LAST_NAME;
+            const email = process.env.ADMIN_EMAIL;
+            const dateOfBirth = process.env.ADMIN_DATE_OF_BIRTH;
+            const address = process.env.ADMIN_ADDRESS;
+            const userType = 1030;
+            const joinDate = new Date().toISOString().slice(0, 10);
+
+            const hashedPassword = bcrypt.hashSync('Go!', 10);
+
+            const query = 'INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address, JoinDate, UserType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            db.run(query, [userName, hashedPassword, firstName, lastName, email, dateOfBirth, address, joinDate, userType], function(err) {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log(`Admin user created with ID ${this.lastID}`);
+                }
+            });
+        }
+    });
 });
+
 
 module.exports = db;
