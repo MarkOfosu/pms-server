@@ -1,32 +1,30 @@
-Bluefins Aquatics Center
+##Bluefins Aquatic Center - Member Portal
 
-**Overview**
-BF-Aquatics is a comprehensive pool facility management system, designed to offer a seamless experience for both staff and customers. This system manages various aspects of pool facility operations, including user account management, booking, staff rostering, and facility monitoring.
+**Project Overview**
+The Bluefins Aquatic Center Pool Management System is a personal project developed using Node.js, Express.js, and React. It is Aimed at enriching my software engineering journey under the guidance of a mentor. The focuses is to create a dynamic Member Portal. This portal is designed to facilitate efficient interactions between administrators and customers, encompassing a range of aquatic activities and programs. This is a practice project that provides a comprehensive learning opportunity, shedding light on the complexities of deployment, database design, management, and DevOps practices, thereby enhancing my expertise in these essential aspects of software engineering.
 
-This is an ongoing project and a work in progress and hence most of the features are not fully implemented.
+##Key Features
 
-**Features**
-Booking Management: Online reservation system for swimming slots and training sessions with cancellation  capability.
+**For Administrators**
+User management with user type assignments (customer or admin).
+Scheduling tools for lap swim and other activities.
+Check-in and payment record systems.
 
-User Account Management: Secure user accounts for different roles, including admins, staff, and customers.
-Staff and Roster Management: Efficient scheduling and time-tracking system for staff and coaches.
-Real-Time Facility Monitoring: IoT integration for monitoring pool conditions.
-Maintenance Tracking: Automated notifications and scheduling for maintenance tasks.
-Remote Lighting Control: Smart lighting system for energy efficiency and ambiance.
-Predictive Maintenance and AI Analytics: AI-driven tools for predictive maintenance and customer engagement analytics.
-Automated Access Control: Digital ID verification and electronic gate control.
-Cloud Infrastructure and DevOps: Scalable and reliable cloud-based deployment.
-Mobile Application: iOS/Android app for user convenience.
-Payment Gateway Integration: Secure processing of payments and financial management.
-User Feedback System: Collection and analysis of user feedback.
-Notifications and Alerts: Automated system for important announcements.
-Technologies
+**For Customers**
+Personalized profile management.
+Account and billing overview.
+Activity reservation system.
+Dashboard with announcements, upcoming appointments, and account details.
+
+**Technical Stack**
 Backend: Node.js, Express.js
 Frontend: React.js, CSS
 Database: SQLite
 Authentication: JWT with HTTP-only cookies
 DevOps: Docker, Kubernetes (planned)
-Setup and Installation
+This MVP is crafted to ensure a seamless, efficient, and enjoyable experience for both staff and members of the Bluefins Aquatic Center, leveraging modern web technologies for optimal performance.
+
+**Setup and Installation**
 Ensure Node.js and npm are installed.
 Clone the repository.
 Run npm install to install dependencies.
