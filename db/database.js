@@ -102,7 +102,7 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
             const userType = 1030;
             const joinDate = new Date().toISOString().slice(0, 10);
 
-            const hashedPassword = bcrypt.hashSync('Go!', 10);
+            const hashedPassword = bcrypt.hashSync(password, 10);
 
             const query = 'INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address, JoinDate, UserType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
             db.run(query, [userName, hashedPassword, firstName, lastName, email, dateOfBirth, address, joinDate, userType], function(err) {
