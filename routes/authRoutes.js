@@ -9,7 +9,7 @@ require('dotenv').config();
 const router = express.Router();
 
 // User Registration
-router.post('/register', async (req, res) => {
+router.post('/register', authenticateToken, async (req, res) => {
     const { userName, email, firstName, lastName, dateOfBirth, address, password, userType } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const joinDate = new Date().toISOString().slice(0, 10);
@@ -26,28 +26,6 @@ router.post('/register', async (req, res) => {
 });
   
 
-// User Login
-// router.post('/login', async (req, res) => {
-//     const { userName, password } = req.body;
-//     const query = 'SELECT * FROM users WHERE Username = ?';
-  
-//     db.get(query, [userName], async (err, user) => {
-//       if (err) {
-//         res.status(500).send('Error logging in');
-//       } else if (!user || !await bcrypt.compare(password, user.Password)) {
-//         res.status(401).send('Invalid credentials');
-//       } else {
-//         const token = jwt.sign({ name: user.FirstName }, process.env.JWT_SECRET, { expiresIn: '1h' });
-//         res.cookie('token', token, {
-//             httpOnly: true,
-//             secure: 'false', 
-//             maxAge: 3600000 // 1 hour
-//         });
-//         res.status(200).json({ message: 'Logged in successfully' });
-//       }
-//     });
-// });
-
 
 // User Login
 router.post('/login', async (req, res) => {
@@ -56,39 +34,59 @@ router.post('/login', async (req, res) => {
 
   db.get(query, [userName], async (err, user) => {
       if (err) {
-          // Log the error for debugging purposes
           console.error(err);
-          res.status(500).json({ error: 'Internal server error' }); // 500 Internal Server Error
+          res.status(500).json({ error: 'Internal server error' }); 
       } else if (!user) {
-          // User not found
-          res.status(404).json({ error: 'Username does not exist' }); // 404 Not Found
+          res.status(404).json({ error: 'Username does not exist' }); 
       } else {
-          // User found, now compare passwords
           const isPasswordMatch = await bcrypt.compare(password, user.Password);
           if (!isPasswordMatch) {
-              // Passwords do not match
-              res.status(401).json({ error: 'Invalid password' }); // 401 Unauthorized
+              res.status(401).json({ error: 'Invalid password' });
           } else {
-              // Passwords match, create token
               const token = jwt.sign({ userId: user.UserId }, process.env.JWT_SECRET, { expiresIn: '1h' });
               res.cookie('token', token, {
                   httpOnly: true,
                   secure: false, // should be true in production if using HTTPS
                   maxAge: 3600000 // 1 hour
               });
-              // Send necessary user details
               res.status(200).json({
                   message: 'Logged in successfully',
                   firstName: user.FirstName,
                   userType: user.UserType,
-                    userType: user.UserType,
+                  profileImage: user.Image,
+                    
               });
           }
       }
   });
 });
 
-
+// Check if user is logged in
+router.get('/checkLoggedIn',  (req, res) => {
+    const userId = req.user.userId; //'userId' is part of the token payload
+    // Query the database for the user details using userId
+    db.get('SELECT FirstName, UserType, ... FROM users WHERE UserId = ?', [userId], (err, user) => {
+      if (err) {
+        res.status(500).json({ error: 'Internal server error' });
+      } else if (user) {
+        res.statys(200).json({
+          success: true,
+          message: 'Token is valid',
+          user: {
+            firstName: user.FirstName,
+            userType: user.UserType,
+            profileImage: user.Image,
+            
+          }
+        });
+        console.log(user);
+      } else {
+        res.status(404).json({ error: 'User not found' });
+      }
+    });
+  }
+    );
+  
 
 
   router.get('/users', authenticateToken, (req, res) => {
@@ -113,9 +111,9 @@ router.post('/login', async (req, res) => {
 });
 
 
-  router.post('/logout', authenticateToken, (req, res) => {
+  router.post('/logout', (req, res) => {
     res.clearCookie('token');
-    res.send('Logged out successfully');
+    res.status(200).json({ message: 'Logged out successfully' });
 });
   
 
