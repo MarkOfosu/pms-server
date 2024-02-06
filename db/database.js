@@ -83,8 +83,10 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         ScheduleID INTEGER PRIMARY KEY AUTOINCREMENT,
         Day TEXT,
         Date DATE,
+        StartTime Time,
+        EndTime TIme,
         LaneNumber INTEGER,
-        Time TIME
+        MaxSwimmers INTEGER
     )`);
 
     // Create admin user if it doesn't already exist

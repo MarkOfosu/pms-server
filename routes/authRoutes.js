@@ -62,14 +62,15 @@ router.post('/login', async (req, res) => {
 });
 
 // Check if user is logged in
-router.get('/checkLoggedIn',  (req, res) => {
+router.get('/checkLoggedIn', authenticateToken, (req, res) => {
     const userId = req.user.userId; //'userId' is part of the token payload
+    console.log('userId22',userId);
     // Query the database for the user details using userId
-    db.get('SELECT FirstName, UserType, ... FROM users WHERE UserId = ?', [userId], (err, user) => {
+    db.get('SELECT FirstName, UserType, Image  FROM users WHERE UserId = ?', [userId], (err, user) => {
       if (err) {
         res.status(500).json({ error: 'Internal server error' });
       } else if (user) {
-        res.statys(200).json({
+        res.status(200).json({
           success: true,
           message: 'Token is valid',
           user: {
@@ -89,34 +90,101 @@ router.get('/checkLoggedIn',  (req, res) => {
   
 
 
-  router.get('/users', authenticateToken, (req, res) => {
+    router.get('/users', authenticateToken, (req, res) => {
     db.all("SELECT UserId, Username, FirstName, LastName, Email, DateOfBirth, Address FROM users", (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: "Internal Server Error" });
-        }
-        const users = rows.map(row => {
-            return {
-                id: row.UserId,
-                username: row.Username,
-                firstName: row.FirstName,
-                lastName: row.LastName, 
-                email: row.Email,
-                dateOfBirth: row.DateOfBirth,
-                address: row.Address                
-            };
-        });
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+      const users = rows.map(row => {
+        return {
+          id: row.UserId,
+          username: row.Username,
+          firstName: row.FirstName,
+          lastName: row.LastName, 
+          email: row.Email,
+          dateOfBirth: row.DateOfBirth,
+          address: row.Address                
+        };
+      });
 
-        res.json({ users });
+      res.json({ users });
     });
-});
+  });
 
+  //update user
+  router.put('/users/:id', authenticateToken, (req, res) => {
+    const { firstName, lastName, email, dateOfBirth, address } = req.body;
+    const id = req.params.id;
+    const query = 'UPDATE users SET FirstName = ?, LastName = ?, Email = ?, DateOfBirth = ?, Address = ? WHERE UserId = ?';
+    db.run(query, [firstName, lastName, email, dateOfBirth, address, id], (err) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+      } else {
+        res.status(201).json({ message: 'Schedule created successfully' });
+
+      }
+    });
+  });
+
+  //delete user
+  router.delete('/users/:id', authenticateToken, (req, res) => {
+    const id = req.params.id;
+    const query = 'DELETE FROM users WHERE UserId = ?';
+    db.run(query, [id], (err) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+      } else {
+        res.status(200).json({ message: `User ${id} deleted successfully` });
+      }
+    });
+  });
+
+  //users profile
+  router.get('/users/:id',(req, res) => {
+    const id = req.params.id;
+    const query = 'SELECT * FROM users WHERE UserId = ?';
+    db.get(query, [id], (err, user) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+      } else if (!user) {
+        res.status(404).json({ error: 'User not found' });
+      } else {
+        res.status(200).json({
+          lastName: user.LastName,
+          firstName: user.FirstName,
+          title: user.Title,
+          email: user.Email,
+          phoneNumber: user.PhoneNumber,
+          address: user.Address,
+        });
+      }
+    }
+    );
+  }
+  );
 
   router.post('/logout', (req, res) => {
     res.clearCookie('token');
     res.status(200).json({ message: 'Logged out successfully' });
+  });
+
+
+// Create a new lapSwimSchedule
+router.post('/lapSwimSchedule', authenticateToken, (req, res) => {
+  const { date, startTime, endTime, lane, maxSwimmers } = req.body;
+  const query = 'INSERT INTO lap_swim_schedules (Date, StartTime, EndTime, LaneNumber, MaxSwimmers) VALUES (?, ?, ?, ?, ?)';;
+  db.run(query, [date, startTime, endTime,lane,  maxSwimmers], (err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Internal server error' });
+    } else {
+      res.status(201).json({ message: `Schedule created successfully` });
+    }
+  });
 });
-  
 
 
-
-module.exports = router;
+  module.exports = router;
