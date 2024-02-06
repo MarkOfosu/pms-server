@@ -26,7 +26,6 @@ router.post('/register', authenticateToken, async (req, res) => {
 });
   
 
-
 // User Login
 router.post('/login', async (req, res) => {
   const { userName, password } = req.body;
