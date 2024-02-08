@@ -111,7 +111,7 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
   });
 
   //update user
-  router.put('/users/:id', authenticateToken, (req, res) => {
+  router.put('/update/user', authenticateToken, (req, res) => {
     const { firstName, lastName, email, dateOfBirth, address } = req.body;
     const id = req.params.id;
     const query = 'UPDATE users SET FirstName = ?, LastName = ?, Email = ?, DateOfBirth = ?, Address = ? WHERE UserId = ?';
@@ -127,7 +127,7 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
   });
 
   //delete user
-  router.delete('/users/:id', authenticateToken, (req, res) => {
+  router.delete('/delete/user', authenticateToken, (req, res) => {
     const id = req.params.id;
     const query = 'DELETE FROM users WHERE UserId = ?';
     db.run(query, [id], (err) => {
@@ -140,30 +140,30 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
     });
   });
 
-  //users profile
-  router.get('/users/:id',(req, res) => {
-    const id = req.params.id;
-    const query = 'SELECT * FROM users WHERE UserId = ?';
-    db.get(query, [id], (err, user) => {
+ // get a user
+router.get('/user', authenticateToken, (req, res) => {
+  const userId = req.user.userId; // Get the user ID from the authenticated user's token
+  const query = 'SELECT * FROM users WHERE UserId = ?';
+  db.get(query, [userId], (err, user) => {
       if (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+          console.error(err);
+          res.status(500).json({ error: 'Internal server error' });
       } else if (!user) {
-        res.status(404).json({ error: 'User not found' });
+          res.status(404).json({ error: 'User not found' });
       } else {
-        res.status(200).json({
-          lastName: user.LastName,
-          firstName: user.FirstName,
-          title: user.Title,
-          email: user.Email,
-          phoneNumber: user.PhoneNumber,
-          address: user.Address,
-        });
+          res.status(200).json({
+              lastName: user.LastName,
+              firstName: user.FirstName,
+              title: user.Title,
+              email: user.Email,
+              phoneNumber: user.PhoneNumber,
+              address: user.Address,
+              profilePicture: user.Image
+          });
       }
-    }
-    );
-  }
-  );
+  });
+});
+
 
   router.post('/logout', (req, res) => {
     res.clearCookie('token');
