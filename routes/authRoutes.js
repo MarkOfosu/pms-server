@@ -62,9 +62,7 @@ router.post('/login', async (req, res) => {
 
 // Check if user is logged in
 router.get('/checkLoggedIn', authenticateToken, (req, res) => {
-    const userId = req.user.userId; //'userId' is part of the token payload
-    console.log('userId22',userId);
-    // Query the database for the user details using userId
+    const userId = req.user.userId; 
     db.get('SELECT FirstName, UserType, Image  FROM users WHERE UserId = ?', [userId], (err, user) => {
       if (err) {
         res.status(500).json({ error: 'Internal server error' });
@@ -86,42 +84,19 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
     });
   }
     );
-  
 
-
-    router.get('/users', authenticateToken, (req, res) => {
-    db.all("SELECT UserId, Username, FirstName, LastName, Email, DateOfBirth, Address FROM users", (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-      const users = rows.map(row => {
-        return {
-          id: row.UserId,
-          username: row.Username,
-          firstName: row.FirstName,
-          lastName: row.LastName, 
-          email: row.Email,
-          dateOfBirth: row.DateOfBirth,
-          address: row.Address                
-        };
-      });
-
-      res.json({ users });
-    });
-  });
 
   //update user
   router.put('/update/user', authenticateToken, (req, res) => {
-    const { firstName, lastName, email, dateOfBirth, address } = req.body;
-    const id = req.params.id;
-    const query = 'UPDATE users SET FirstName = ?, LastName = ?, Email = ?, DateOfBirth = ?, Address = ? WHERE UserId = ?';
-    db.run(query, [firstName, lastName, email, dateOfBirth, address, id], (err) => {
+    const {  email,  address, dateOfBirth, profilePicture } = req.body;
+    const userId = req.user.userId;
+    const query = 'UPDATE users SET Email = ?, Address = ?, DateOfBirth = ?, Image = ? WHERE UserId = ?';
+    db.run(query, [email, address, dateOfBirth, profilePicture, userId], (err) => {
       if (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
       } else {
-        res.status(201).json({ message: 'Schedule created successfully' });
-
+        res.status(200).json({ message: `User ${userId} updated successfully` });
       }
     });
   });
@@ -141,8 +116,8 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
   });
 
  // get a user
-router.get('/user', authenticateToken, (req, res) => {
-  const userId = req.user.userId; // Get the user ID from the authenticated user's token
+router.get('/users', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
   const query = 'SELECT * FROM users WHERE UserId = ?';
   db.get(query, [userId], (err, user) => {
       if (err) {
@@ -156,7 +131,7 @@ router.get('/user', authenticateToken, (req, res) => {
               firstName: user.FirstName,
               title: user.Title,
               email: user.Email,
-              phoneNumber: user.PhoneNumber,
+              dateOfBirth: user.DateOfBirth,
               address: user.Address,
               profilePicture: user.Image
           });
