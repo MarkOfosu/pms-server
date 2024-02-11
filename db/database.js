@@ -81,7 +81,6 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
     // Create Lap Swim Schedules table
     db.run(`CREATE TABLE IF NOT EXISTS lap_swim_schedules (
         ScheduleID INTEGER PRIMARY KEY AUTOINCREMENT,
-        Day TEXT,
         Date DATE,
         StartTime Time,
         EndTime TIme,

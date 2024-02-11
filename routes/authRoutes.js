@@ -146,8 +146,8 @@ router.get('/users', authenticateToken, (req, res) => {
   });
 
 
-// Create a new lapSwimSchedule
-router.post('/lapSwimSchedule', authenticateToken, (req, res) => {
+// Create lapSwimSchedule
+router.post('/create/lapSwimSchedule', authenticateToken, (req, res) => {
   const { date, startTime, endTime, lane, maxSwimmers } = req.body;
   const query = 'INSERT INTO lap_swim_schedules (Date, StartTime, EndTime, LaneNumber, MaxSwimmers) VALUES (?, ?, ?, ?, ?)';;
   db.run(query, [date, startTime, endTime,lane,  maxSwimmers], (err) => {
@@ -158,6 +158,20 @@ router.post('/lapSwimSchedule', authenticateToken, (req, res) => {
       res.status(201).json({ message: `Schedule created successfully` });
     }
   });
+});
+
+
+// Fetch lapSwimSchedule
+router.get('/lapSwimSchedule', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM lap_swim_schedules';
+  db.all(query, (err, schedules) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Internal server error' });
+    } else {
+      res.status(200).json(schedules);
+    }
+  }); 
 });
 
 
