@@ -12,7 +12,7 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
     }
     console.log('Connected to the SQLite database.');
 
-    // Create Users table
+    // all users table
     db.run(`CREATE TABLE IF NOT EXISTS users (
         UserId INTEGER PRIMARY KEY AUTOINCREMENT,
         UserName TEXT NOT NULL UNIQUE,
@@ -37,13 +37,13 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         FOREIGN KEY(UserID) REFERENCES users(UserId)
     )`);
 
-    // Create ActivityTypes table
+    // activity_types table
     db.run(`CREATE TABLE IF NOT EXISTS activity_types (
         ActivityTypeID INTEGER PRIMARY KEY AUTOINCREMENT,
         ActivityName TEXT NOT NULL
     )`);
 
-    // Create Reservations table
+    // reservations table
     //status: open, closed
     db.run(`CREATE TABLE IF NOT EXISTS reservations (
         ReservationID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,7 +57,7 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         FOREIGN KEY(ActivityTypeID) REFERENCES activity_types(ActivityTypeID)
     )`);
 
-    // Create Activity Check-In table
+    // activity_check_in table
     db.run(`CREATE TABLE IF NOT EXISTS activity_check_in (
         CheckInID INTEGER PRIMARY KEY AUTOINCREMENT,
         UserID INTEGER NOT NULL,
@@ -67,7 +67,7 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         FOREIGN KEY(ReservationID) REFERENCES reservations(ReservationID)
     )`);
 
-    // Create Payment History table
+    //payment_historytable
     db.run(`CREATE TABLE IF NOT EXISTS payment_history (
         PaymentID INTEGER PRIMARY KEY AUTOINCREMENT,
         UserID INTEGER NOT NULL,
@@ -78,7 +78,7 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         FOREIGN KEY(UserID) REFERENCES users(UserId)
     )`);
 
-    // Create Lap Swim Schedules table
+    //lap_swim_schedules table
     db.run(`CREATE TABLE IF NOT EXISTS lap_swim_schedules (
         ScheduleID INTEGER PRIMARY KEY AUTOINCREMENT,
         Date DATE,

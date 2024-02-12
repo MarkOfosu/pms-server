@@ -171,8 +171,9 @@ router.get('/lapSwimSchedule', authenticateToken, (req, res) => {
     } else {
       res.status(200).json(schedules);
     }
-  }); 
+  });
 });
+ 
 
 
   module.exports = router;
