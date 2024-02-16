@@ -175,5 +175,62 @@ router.get('/lapSwimSchedule', authenticateToken, (req, res) => {
 });
  
 
+//create reservation
+router.post('/create/reservation', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const { scheduleId } = req.body;
+  const query = 'INSERT INTO reservations (UserID, ScheduleID) VALUES (?, ?)';
+  db.run(query, [userId, scheduleId], (err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+    else {
+      res.status(201).json({ message: `Reservation created successfully` });
+    }
+  }
+  );
+});
+
+// Fetch Upcoming Reservations
+router.get('/upcoming', authenticateToken, (req, res) => {
+  const userId = req.user.userId; // Assuming userID is stored in req.user
+  const query = `
+      SELECT * FROM reservations
+      JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityTypeID
+      LEFT JOIN lap_swim_schedules ON reservations.ScheduleID = lap_swim_schedules.ScheduleID
+      WHERE reservations.UserID = ? AND reservations.Date >= CURRENT_DATE
+      ORDER BY reservations.Date, lap_swim_schedules.StartTime;
+  `;
+  db.all(query, [userId], (err, reservations) => {
+      if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+      res.json({ upcomingReservations: reservations });
+  });
+});
+
+// Fetch Historical Reservations
+router.get('/history', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const query = `
+      SELECT * FROM reservations
+      JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityTypeID
+      LEFT JOIN lap_swim_schedules ON reservations.ScheduleID = lap_swim_schedules.ScheduleID
+      WHERE reservations.UserID = ? AND reservations.Date < CURRENT_DATE
+      ORDER BY reservations.Date DESC, lap_swim_schedules.StartTime;
+  `;
+  db.all(query, [userId], (err, reservations) => {
+      if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+      res.json({ historicalReservations: reservations });
+  });
+});
+
+
+
 
   module.exports = router;
