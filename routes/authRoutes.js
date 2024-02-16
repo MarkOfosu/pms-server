@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const db = require('../db/database');
 const jwt = require('jsonwebtoken');
 const authenticateToken  = require('../middleware/authenticateToken');
+const { use } = require('bcrypt/promises');
 require('dotenv').config();
 
 const router = express.Router();
@@ -178,19 +179,23 @@ router.get('/lapSwimSchedule', authenticateToken, (req, res) => {
 //create reservation
 router.post('/create/reservation', authenticateToken, (req, res) => {
   const userId = req.user.userId;
-  const { scheduleId } = req.body;
-  const query = 'INSERT INTO reservations (UserID, ScheduleID) VALUES (?, ?)';
-  db.run(query, [userId, scheduleId], (err) => {
+  const { scheduleId, activityTypeId } = req.body;
+  // Ensure you have validated or sanitized input data before inserting it into your database
+  const status = 'open'; // Assuming 'open' is the default status for new reservations
+
+  const query = 'INSERT INTO reservations (UserID, ActivityTypeID, ScheduleID, Status, StartTime, EndTime, Date) SELECT ?, ?, ?, ?, StartTime, EndTime, Date FROM lap_swim_schedules WHERE ScheduleID = ?';
+  db.run(query, [userId, activityTypeId, scheduleId, status, scheduleId], (err) => {
+    console.log(userId, activityTypeId, scheduleId, status, scheduleId);
     if (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-    else {
-      res.status(201).json({ message: `Reservation created successfully` });
-    }
+      console.error("SQL Error: ", err.message);
+      res.status(500).json({ error: 'Internal server error', details: err.message });
+      console.log("SQL Error: ", err.message);
+    } else {
+      res.status(201).json({ message: 'Reservation created successfully' });
   }
-  );
+  });
 });
+
 
 // Fetch Upcoming Reservations
 router.get('/upcoming', authenticateToken, (req, res) => {

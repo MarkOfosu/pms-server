@@ -37,32 +37,28 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         FOREIGN KEY(UserID) REFERENCES users(UserId)
     )`);
 
-    // activity_types table
-    db.run(`CREATE TABLE IF NOT EXISTS activity_types (
-        ActivityTypeID INTEGER PRIMARY KEY AUTOINCREMENT,
-        ActivityName TEXT NOT NULL
-    )`);
-
-    // reservations table
-    //status: open, closed
+    //Reservations Table
     db.run(`CREATE TABLE IF NOT EXISTS reservations (
         ReservationID INTEGER PRIMARY KEY AUTOINCREMENT,
         UserID INTEGER NOT NULL,
         ActivityTypeID INTEGER NOT NULL,
-        StartTime TIME,
-        EndTime TIME,
+        ScheduleID INTEGER, -- Optional, based on your design
+        StartTime DATETIME,
+        EndTime DATETIME,
         Date DATE,
-        Status TEXT,
+        Status TEXT CHECK(Status IN ('open', 'closed')), -- Enforcing 'open' or 'closed' status
+        IsCheckedIn BOOLEAN DEFAULT 0, -- New field to track check-in status
         FOREIGN KEY(UserID) REFERENCES users(UserId),
-        FOREIGN KEY(ActivityTypeID) REFERENCES activity_types(ActivityTypeID)
+        FOREIGN KEY(ActivityTypeID) REFERENCES activity_types(ActivityTypeID),
+        FOREIGN KEY(ScheduleID) REFERENCES lap_swim_schedules(ScheduleID) -- If you decide to link schedules
     )`);
-
-    // activity_check_in table
+    
+    //Activity Check-In Table
     db.run(`CREATE TABLE IF NOT EXISTS activity_check_in (
         CheckInID INTEGER PRIMARY KEY AUTOINCREMENT,
         UserID INTEGER NOT NULL,
         ReservationID INTEGER NOT NULL,
-        CheckInTime TIME,
+        CheckInTime DATETIME, -- Updated to include date
         FOREIGN KEY(UserID) REFERENCES users(UserId),
         FOREIGN KEY(ReservationID) REFERENCES reservations(ReservationID)
     )`);
