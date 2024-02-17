@@ -84,6 +84,11 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         MaxSwimmers INTEGER
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS activity_types (
+        ActivityID INTEGER PRIMARY KEY,
+        ActivityName TEXT NOT NULL UNIQUE
+    )`);
+
     // Create admin user if it doesn't already exist
     db.get("SELECT * FROM users WHERE UserType = ?", [1030], (err, user) => {
         if (err) {
@@ -110,6 +115,25 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
                 }
             });
         }
+    });
+
+    // Create activity types if they don't already exist
+    const activityTypes = ['Lap Swim', 'Aqua Aerobics', 'Swim Lessons', 'Family Swim', 'Swim Team', 'Water Polo'];
+    activityTypes.forEach((activity) => {
+        db.get("SELECT * FROM activity_types WHERE ActivityName = ?", [activity], (err, activityType) => {
+            if (err) {
+                console.error(err);
+            } else if (!activityType) {
+                const query = 'INSERT INTO activity_types (ActivityName) VALUES (?)';
+                db.run(query, [activity], function(err) {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        console.log(`Activity type created with ID ${this.lastID}`);
+                    }
+                });
+            }
+        });
     });
 });
 

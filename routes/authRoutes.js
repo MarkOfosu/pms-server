@@ -78,7 +78,6 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
             
           }
         });
-        console.log(user);
       } else {
         res.status(404).json({ error: 'User not found' });
       }
@@ -185,7 +184,6 @@ router.post('/create/reservation', authenticateToken, (req, res) => {
 
   const query = 'INSERT INTO reservations (UserID, ActivityTypeID, ScheduleID, Status, StartTime, EndTime, Date) SELECT ?, ?, ?, ?, StartTime, EndTime, Date FROM lap_swim_schedules WHERE ScheduleID = ?';
   db.run(query, [userId, activityTypeId, scheduleId, status, scheduleId], (err) => {
-    console.log(userId, activityTypeId, scheduleId, status, scheduleId);
     if (err) {
       console.error("SQL Error: ", err.message);
       res.status(500).json({ error: 'Internal server error', details: err.message });
@@ -198,23 +196,38 @@ router.post('/create/reservation', authenticateToken, (req, res) => {
 
 
 // Fetch Upcoming Reservations
-router.get('/upcoming', authenticateToken, (req, res) => {
+router.get('/upcoming/reservation', authenticateToken, (req, res) => {
   const userId = req.user.userId; // Assuming userID is stored in req.user
-  const query = `
-      SELECT * FROM reservations
-      JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityTypeID
-      LEFT JOIN lap_swim_schedules ON reservations.ScheduleID = lap_swim_schedules.ScheduleID
-      WHERE reservations.UserID = ? AND reservations.Date >= CURRENT_DATE
-      ORDER BY reservations.Date, lap_swim_schedules.StartTime;
+  const { activityTypeId } = req.query; // Get ActivityTypeID from query parameters
+
+  // Base query
+  let query = `
+    SELECT reservations.*, activity_types.ActivityName, lap_swim_schedules.Date, lap_swim_schedules.StartTime, lap_swim_schedules.EndTime
+    FROM reservations
+    JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityTypeID
+    LEFT JOIN lap_swim_schedules ON reservations.ScheduleID = lap_swim_schedules.ScheduleID
+    WHERE reservations.UserID = ? AND reservations.Date >= CURRENT_DATE
   `;
-  db.all(query, [userId], (err, reservations) => {
+
+  const queryParams = [userId]; // Initial query parameters
+
+  // If an activity type ID is provided, adjust the query to filter by it
+  if (activityTypeId) {
+    query += ` AND reservations.ActivityTypeID = ?`;
+    queryParams.push(activityTypeId); // Add to parameters for the SQL query
+  }
+
+  query += ` ORDER BY reservations.Date, lap_swim_schedules.StartTime`; // Finalize the query with ordering
+
+  db.all(query, queryParams, (err, reservations) => {
       if (err) {
           console.error(err);
-          return res.status(500).json({ error: 'Internal server error' });
+          return res.status(500).json({ error: 'Internal server error', details: err.message });
       }
       res.json({ upcomingReservations: reservations });
   });
 });
+
 
 // Fetch Historical Reservations
 router.get('/history', authenticateToken, (req, res) => {
@@ -232,6 +245,17 @@ router.get('/history', authenticateToken, (req, res) => {
           return res.status(500).json({ error: 'Internal server error' });
       }
       res.json({ historicalReservations: reservations });
+  });
+});
+
+router.get('/activities', (req, res) => {
+  const query = 'SELECT ActivityID as id, ActivityName as name FROM activity_types';
+  db.all(query, [], (err, activities) => {
+      if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Internal server error', details: err.message });
+      }
+      res.json(activities);
   });
 });
 
