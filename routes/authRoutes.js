@@ -198,28 +198,23 @@ router.post('/create/reservation', authenticateToken, (req, res) => {
 // Fetch Upcoming Reservations
 router.get('/upcoming/reservation', authenticateToken, (req, res) => {
   const userId = req.user.userId; // Assuming userID is stored in req.user
-  const { activityTypeId } = req.query; // Get ActivityTypeID from query parameters
 
-  // Base query
+  // Updated query to remove activity type filtering unless needed for future use
   let query = `
-    SELECT reservations.*, activity_types.ActivityName, lap_swim_schedules.Date, lap_swim_schedules.StartTime, lap_swim_schedules.EndTime
+    SELECT 
+      reservations.*, 
+      activity_types.ActivityName, 
+      lap_swim_schedules.Date, 
+      lap_swim_schedules.StartTime, 
+      lap_swim_schedules.EndTime
     FROM reservations
-    JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityTypeID
+    JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityID
     LEFT JOIN lap_swim_schedules ON reservations.ScheduleID = lap_swim_schedules.ScheduleID
     WHERE reservations.UserID = ? AND reservations.Date >= CURRENT_DATE
+    ORDER BY reservations.Date, lap_swim_schedules.StartTime
   `;
 
-  const queryParams = [userId]; // Initial query parameters
-
-  // If an activity type ID is provided, adjust the query to filter by it
-  if (activityTypeId) {
-    query += ` AND reservations.ActivityTypeID = ?`;
-    queryParams.push(activityTypeId); // Add to parameters for the SQL query
-  }
-
-  query += ` ORDER BY reservations.Date, lap_swim_schedules.StartTime`; // Finalize the query with ordering
-
-  db.all(query, queryParams, (err, reservations) => {
+  db.all(query, [userId], (err, reservations) => {
       if (err) {
           console.error(err);
           return res.status(500).json({ error: 'Internal server error', details: err.message });
@@ -227,6 +222,7 @@ router.get('/upcoming/reservation', authenticateToken, (req, res) => {
       res.json({ upcomingReservations: reservations });
   });
 });
+
 
 
 // Fetch Historical Reservations
