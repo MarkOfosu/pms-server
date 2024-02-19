@@ -193,10 +193,40 @@ router.post('/create/reservation', authenticateToken, (req, res) => {
   }
   });
 });
+// Fetch all reservations with activity names
+router.get('/reservations', authenticateToken, (req, res) => {
+  let query = `
+      SELECT 
+          reservations.ReservationID,
+          users.FirstName AS userName,
+          users.UserId,
+          activity_types.ActivityName,
+          reservations.Date,
+          reservations.StartTime,
+          reservations.EndTime,
+          reservations.Status,
+          reservations.IsCheckedIn
+      FROM reservations
+      JOIN users ON reservations.UserID = users.UserId
+      JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityID
+      ORDER BY reservations.Date, reservations.StartTime
+  `;
+
+  db.all(query, [], (err, reservations) => {
+      if (err) {
+          console.error("Error fetching reservations:", err);
+          return res.status(500).json({ error: 'Internal server error', details: err.message });
+      } else {
+          res.json({ reservations });
+      }
+  });
+});
 
 
-// Fetch Upcoming Reservations
-router.get('/upcoming/reservation', authenticateToken, (req, res) => {
+
+
+// Fetch users Upcoming Reservations
+router.get('/upcoming/reservations', authenticateToken, (req, res) => {
   const userId = req.user.userId; // Assuming userID is stored in req.user
 
   // Updated query to remove activity type filtering unless needed for future use
@@ -220,6 +250,20 @@ router.get('/upcoming/reservation', authenticateToken, (req, res) => {
           return res.status(500).json({ error: 'Internal server error', details: err.message });
       }
       res.json({ upcomingReservations: reservations });
+  });
+});
+
+//check in reservation 
+router.put('/checkin/reservation', authenticateToken, (req, res) => {
+  const reservationId = req.params.id;
+  const query = 'UPDATE reservations SET IsCheckedIn = 1 WHERE ReservationID = ?';
+  db.run(query, [reservationId], (err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Internal server error' });
+    } else {
+      res.status(200).json({ message: `Reservation ${reservationId} checked in successfully` });
+    }
   });
 });
 
