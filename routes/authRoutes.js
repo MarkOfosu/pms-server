@@ -175,24 +175,31 @@ router.get('/lapSwimSchedule', authenticateToken, (req, res) => {
 });
  
 
-//create reservation
+// Create a new reservation
 router.post('/create/reservation', authenticateToken, (req, res) => {
   const userId = req.user.userId;
-  const { scheduleId, activityTypeId } = req.body;
-  // Ensure you have validated or sanitized input data before inserting it into your database
-  const status = 'open'; // Assuming 'open' is the default status for new reservations
+  const { scheduleID, activityID } = req.body;
 
-  const query = 'INSERT INTO reservations (UserID, ActivityTypeID, ScheduleID, Status, StartTime, EndTime, Date) SELECT ?, ?, ?, ?, StartTime, EndTime, Date FROM lap_swim_schedules WHERE ScheduleID = ?';
-  db.run(query, [userId, activityTypeId, scheduleId, status, scheduleId], (err) => {
+  const status = 'open';
+
+  const query = `
+    INSERT INTO reservations (UserID, ActivityTypeID, ScheduleID, Status, StartTime, EndTime, Date)
+    SELECT ?, ?, ?, ?, StartTime, EndTime, Date
+    FROM lap_swim_schedules
+    WHERE ScheduleID = ?`;
+
+  db.run(query, [userId, activityID, scheduleID, status, scheduleID], (err) => {
     if (err) {
-      console.error("SQL Error: ", err.message);
+      console.error("SQL Error:", err.message);
       res.status(500).json({ error: 'Internal server error', details: err.message });
-      console.log("SQL Error: ", err.message);
     } else {
       res.status(201).json({ message: 'Reservation created successfully' });
-  }
+    }
   });
 });
+
+
+
 // Fetch all reservations with activity names
 router.get('/reservations', authenticateToken, (req, res) => {
   let query = `
