@@ -28,6 +28,21 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         
     )`);
 
+    //Create PayementAccounts table to store balances, payment due, and payment history
+    db.run(`CREATE TABLE IF NOT EXISTS payment_account (
+        AccountID INTEGER PRIMARY KEY AUTOINCREMENT,
+        UserID INTEGER NOT NULL,
+        AccountBalance REAL CHECK(AccountBalance >= 0),
+        PaymentDue REAL CHECK(PaymentDue >= 0),
+        AccountCredit REAL,
+        AccountDebit REAL,
+        FOREIGN KEY(UserID) REFERENCES users(UserId),
+        CHECK(AccountBalance >= PaymentDue)
+    )`);
+
+
+       
+
     // Create Profiles table
     db.run(`CREATE TABLE IF NOT EXISTS profiles (
         ProfileID INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const db = require('../db/database');
 const jwt = require('jsonwebtoken');
 const authenticateToken  = require('../middleware/authenticateToken');
+const upload = require('../middleware/multerConfig');
 const { use } = require('bcrypt/promises');
 require('dotenv').config();
 
@@ -85,21 +86,26 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
   }
     );
 
-
-  //update user
-  router.put('/update/user', authenticateToken, (req, res) => {
-    const {  email,  address, dateOfBirth, profilePicture } = req.body;
+  // Update user profile
+  router.put('/update/user', authenticateToken, upload.single('profilePicture'), (req, res) => {
+    const { email, address, dateOfBirth } = req.body;
+    const profilePicture = req.file ? req.file.path : null; // Use file path
     const userId = req.user.userId;
+    console.log(profilePicture);
+  
     const query = 'UPDATE users SET Email = ?, Address = ?, DateOfBirth = ?, Image = ? WHERE UserId = ?';
     db.run(query, [email, address, dateOfBirth, profilePicture, userId], (err) => {
       if (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
       } else {
-        res.status(200).json({ message: `User ${userId} updated successfully` });
+        res.status(200).json({ message: 'User profile updated successfully', profileImage: profilePicture });
       }
-    });
+    }
+    );
   });
+
+  
 
   //delete user
   router.delete('/delete/user', authenticateToken, (req, res) => {
@@ -273,6 +279,20 @@ router.put('/checkin/reservation', authenticateToken, (req, res) => {
     }
   });
 });
+
+
+router.get('/account', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const query = 'SELECT * FROM payment_account WHERE UserID = ?';
+  db.get(query, [userId], (err, account) => {
+      if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+      res.json(account);
+  });
+}
+);
 
 
 
