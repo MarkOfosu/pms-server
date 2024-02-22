@@ -5,7 +5,6 @@ const authRoutes = require('./routes/authRoutes');
 const authenticateToken = require('./middleware/authenticateToken'); 
 const cookieParser = require('cookie-parser');
 const path = require('path');
-// const fs = require('fs');
 
 require('dotenv').config(); 
 
@@ -25,11 +24,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use('/api/auth', authRoutes);
 
-
-// const uploadsDir = path.join(__dirname, 'uploads');
-// if (!fs.existsSync(uploadsDir)){
-//     fs.mkdirSync(uploadsDir);
-// }
 
 const port = process.env.PORT || 5001;
 
