@@ -5,8 +5,8 @@ const path = require('path');
 // Configure storage
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
-    // Save uploaded files to the 'uploads' directory and push it to user's table in the database
-    cb(null, path.resolve(__dirname, '../uploads'));
+    // Upload files to the 'uploads' directory
+    cb(null, 'uploads/');
   },
   filename: function(req, file, cb) {
     // Generate a unique filename for the uploaded file

@@ -89,9 +89,17 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
   // Update user profile
   router.put('/update/user', authenticateToken, upload.single('profilePicture'), (req, res) => {
     const { email, address, dateOfBirth } = req.body;
-    const profilePicture = req.file ? req.file.path : null; // Use file path
+    // const profilePicture = req.file ? `/uploads/${req.file.filename}` : null;
     const userId = req.user.userId;
-    console.log(profilePicture);
+    // console.log(profilePicture);
+    let profilePicture;
+
+    if (req.file) {
+      // The image URL that can be accessed publicly via HTTP
+      profilePicture = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    } else {
+      profilePicture = null;
+    }
   
     const query = 'UPDATE users SET Email = ?, Address = ?, DateOfBirth = ?, Image = ? WHERE UserId = ?';
     db.run(query, [email, address, dateOfBirth, profilePicture, userId], (err) => {

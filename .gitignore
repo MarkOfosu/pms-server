@@ -35,4 +35,7 @@ desktop.ini
 .sessions.sqlite
 .pm2/
 .gitignore
+
+#uploads
+uploads/
 ```
