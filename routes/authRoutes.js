@@ -1,14 +1,19 @@
 //routes/authRoutes.js
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const db = require('../db/database');
 const jwt = require('jsonwebtoken');
 const authenticateToken  = require('../middleware/authenticateToken');
 const upload = require('../middleware/multerConfig');
-const { use } = require('bcrypt/promises');
+const { use } = require('bcryptjs');
 require('dotenv').config();
 
 const router = express.Router();
+
+// Health Check route
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Service is up and running' });
+});
 
 // User Registration
 router.post('/register', authenticateToken, async (req, res) => {

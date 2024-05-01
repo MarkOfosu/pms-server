@@ -1,7 +1,7 @@
 //server/db/database.js
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 require('dotenv').config();
 
@@ -154,3 +154,33 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
 
 
 module.exports = db;
+
+// const mysql = require('mysql');
+// require('dotenv').config();
+
+// // Create a MySQL connection pool (more efficient than single connections)
+// const pool = mysql.createPool({
+//   connectionLimit : 10, // You might want to adjust this number
+//   host     : process.env.RDS_HOSTNAME,
+//   user     : process.env.RDS_USERNAME,
+//   password : process.env.RDS_PASSWORD,
+//   database : process.env.RDS_DB_NAME,
+//   port     : process.env.RDS_PORT
+// });
+
+// // Verify the connection
+// pool.getConnection((err, connection) => {
+//   if (err) {
+//     return console.error('error: ' + err.message);
+//   }
+//   console.log('Connected to the MySQL server.');
+
+//   // Create tables or run other database setup here
+//   // ...
+
+//   // Release the connection back to the pool
+//   connection.release();
+// });
+
+// module.exports = pool;
+
