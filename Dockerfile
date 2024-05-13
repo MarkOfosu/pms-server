@@ -10,7 +10,7 @@ RUN npm install
 ENV NODE_ENV=production \
     PORT=80 \
     TOKEN_KEY="Secret 123" \
-    REACT_APP_BACKEND_URL="http://localhost:5001" \
+    REACT_APP_BACKEND_URL="http://api.pool-ms.com" \
     DATABASE_URL="sqlite:///./db.sqlite" \
     JWT_SECRET="sljfsdjfouwouwrnwlrn3qw9eqeqeqlrnlncoj2330937r969qwe" \
     SESSION_SECRET="khkhk489498309dskhf0" \

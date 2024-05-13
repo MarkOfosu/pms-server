@@ -17,6 +17,7 @@ router.get('/health', (req, res) => {
 
 // User Registration
 router.post('/register', authenticateToken, async (req, res) => {
+  console.log('payload', req.body)
     const { userName, email, firstName, lastName, dateOfBirth, address, password, userType } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const joinDate = new Date().toISOString().slice(0, 10);
@@ -60,6 +61,7 @@ router.post('/login', async (req, res) => {
                   firstName: user.FirstName,
                   userType: user.UserType,
                   profileImage: user.Image,
+                  token : token
                     
               });
           }
@@ -117,7 +119,6 @@ router.get('/checkLoggedIn', authenticateToken, (req, res) => {
     );
   });
 
-  
 
   //delete user
   router.delete('/delete/user', authenticateToken, (req, res) => {
@@ -157,9 +158,12 @@ router.get('/users', authenticateToken, (req, res) => {
   });
 });
 
+//logout has to be post or get?
 
   router.post('/logout', (req, res) => {
     res.clearCookie('token');
+    console.log('Logged out successfully');
+    console.log('token', req.cookies.token);
     res.status(200).json({ message: 'Logged out successfully' });
   });
 
@@ -302,6 +306,7 @@ router.get('/account', authenticateToken, (req, res) => {
           return res.status(500).json({ error: 'Internal server error' });
       }
       res.json(account);
+      console.log('account', account);
   });
 }
 );

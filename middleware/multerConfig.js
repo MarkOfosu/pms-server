@@ -10,11 +10,9 @@ const storage = multer.diskStorage({
   },
   filename: function(req, file, cb) {
     // Generate a unique filename for the uploaded file
-    console.log(file);
     cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 
-// Export the configured multer instance
 const upload = multer({ storage: storage });
 module.exports = upload;
