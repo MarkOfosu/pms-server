@@ -3,18 +3,20 @@ const bcrypt = require('bcryptjs');
 function initializeUsers(db) {
     createAdminUser(db);
     createPublicUser(db);
+    createActivityTypes(db);
+    createLapSwimSchedules(db);
     ensureFinancialRecords(db);
 }
 
 function createAdminUser(db) {
     const userType = 1030; // Admin user type
-    const hashedPassword = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
     db.get("SELECT UserId FROM users WHERE UserType = ?", [userType], (err, user) => {
         if (err) {
             console.error("Error checking for admin user:", err.message);
             return;
         }
         if (!user) {
+            const hashedPassword = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
             db.run("INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address, JoinDate, UserType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
                 process.env.ADMIN_USERNAME,
                 hashedPassword,
@@ -38,20 +40,13 @@ function createAdminUser(db) {
 
 function createPublicUser(db) {
     const userType = 1020; // Public user type
-    const password = process.env.PUBLIC_PASSWORD;
-
-    if (!password) {
-        console.error("Public user password not set in environment variables.");
-        return;
-    }
-
-    const hashedPassword = bcrypt.hashSync(password, 10);
     db.get("SELECT UserId FROM users WHERE UserType = ?", [userType], (err, user) => {
         if (err) {
             console.error("Error checking for public user:", err.message);
             return;
         }
         if (!user) {
+            const hashedPassword = bcrypt.hashSync(process.env.PUBLIC_PASSWORD, 10);
             db.run("INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address, JoinDate, UserType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
                 process.env.PUBLIC_USERNAME,
                 hashedPassword,
@@ -69,13 +64,55 @@ function createPublicUser(db) {
                     console.log(`Public user created with ID ${this.lastID}`);
                 }
             });
-        } else {
-            console.log("Public user already exists.");
         }
     });
 }
 
+function createActivityTypes(db) {
+    const activityTypes = ['Lap Swim', 'Aqua Aerobics', 'Swim Lessons', 'Family Swim', 'Swim Team', 'Water Polo'];
+    activityTypes.forEach(activity => {
+        db.get("SELECT ActivityID FROM activity_types WHERE ActivityName = ?", [activity], (err, exists) => {
+            if (err) {
+                console.error(`Error checking activity type ${activity}:`, err.message);
+                return;
+            }
+            if (!exists) {
+                db.run("INSERT INTO activity_types (ActivityName) VALUES (?)", [activity], function(err) {
+                    if (err) {
+                        console.error(`Error creating activity type ${activity}:`, err.message);
+                    } else {
+                        console.log(`Activity type ${activity} created with ID ${this.lastID}`);
+                    }
+                });
+            }
+        });
+    });
+}
 
+function createLapSwimSchedules(db) {
+    const lapSwimSchedules = [
+        { Date: '2024-07-01', StartTime: '07:00:00', EndTime: '08:00:00', LaneNumber: 1, MaxSwimmers: 5 },
+        { Date: '2024-06-01', StartTime: '08:00:00', EndTime: '09:00:00', LaneNumber: 1, MaxSwimmers: 5 },
+        { Date: '2024-06-01', StartTime: '10:00:00', EndTime: '11:00:00', LaneNumber: 1, MaxSwimmers: 5 }
+    ];
+    lapSwimSchedules.forEach(schedule => {
+        db.get("SELECT ScheduleID FROM lap_swim_schedules WHERE Date = ? AND StartTime = ? AND EndTime = ?", [schedule.Date, schedule.StartTime, schedule.EndTime], (err, exists) => {
+            if (err) {
+                console.error("Error checking lap swim schedule:", err.message);
+                return;
+            }
+            if (!exists) {
+                db.run("INSERT INTO lap_swim_schedules (Date, StartTime, EndTime, LaneNumber, MaxSwimmers) VALUES (?, ?, ?, ?, ?)", [schedule.Date, schedule.StartTime, schedule.EndTime, schedule.LaneNumber, schedule.MaxSwimmers], function(err) {
+                    if (err) {
+                        console.error("Error creating lap swim schedule:", err.message);
+                    } else {
+                        console.log(`Lap swim schedule created with ID ${this.lastID}`);
+                    }
+                });
+            }
+        });
+    });
+}
 
 function ensureFinancialRecords(db) {
     db.each("SELECT UserId FROM users", [], (err, row) => {

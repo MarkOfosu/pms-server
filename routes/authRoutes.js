@@ -33,7 +33,7 @@ router.post('/register', authenticateToken, async (req, res) => {
               return res.status(500).json({ message: 'Error registering new user', error: userErr.message });
           }
 
-          const newUserId = this.lastID; // 'this.lastID' captures the ID of the newly inserted user.
+          const newUserId = this.lastID; 
 
           // Create payment account for new user
           const accountQuery = `INSERT INTO payment_account (UserID, AccountBalance, PaymentDue, AccountCredit, AccountDebit) VALUES (?, 0, 0, 0, 0)`;
@@ -281,13 +281,9 @@ router.get('/reservations', authenticateToken, (req, res) => {
 });
 
 
-
-
 // Fetch users Upcoming Reservations
 router.get('/upcoming/reservations', authenticateToken, (req, res) => {
-  const userId = req.user.userId; // Assuming userID is stored in req.user
-  console.log('userId', userId);
-
+  const userId = req.user.userId; 
   // Updated query to remove activity type filtering unless needed for future use
   let query = `
     SELECT * FROM reservations
@@ -332,7 +328,6 @@ router.get('/account', authenticateToken, (req, res) => {
           return res.status(500).json({ error: 'Internal server error' });
       }
       res.json({ account});
-      console.log('account', account);
   });
 });
 
