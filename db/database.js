@@ -2,16 +2,20 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
-
 require('dotenv').config();
-
 const dbPath = path.resolve(__dirname, 'db.sqlite');
+const {initializeUsers} = require('./dbActions');
+
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
-        return console.error(err.message);
+        console.error('Failed to connect to the database:', err.message);
+    } else {
+        console.log('Connected to the SQLite database.');
+        initializeUsers(db);
     }
-    console.log('Connected to the SQLite database.');
+});
 
+db.serialize(() => {
     // all users table
     db.run(`CREATE TABLE IF NOT EXISTS users (
         UserId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,83 +108,17 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         ActivityName TEXT NOT NULL UNIQUE
     )`);
 
-    // Create admin user if it doesn't already exist
-    db.get("SELECT * FROM users WHERE UserType = ?", [1030], (err, user) => {
-        if (err) {
-            console.error(err);
-        } else if (!user) {
-            const userName = process.env.ADMIN_USERNAME;
-            const password = process.env.ADMIN_PASSWORD;
-            const firstName = process.env.ADMIN_FIRST_NAME;
-            const lastName = process.env.ADMIN_LAST_NAME;
-            const email = process.env.ADMIN_EMAIL;
-            const dateOfBirth = process.env.ADMIN_DATE_OF_BIRTH;
-            const address = process.env.ADMIN_ADDRESS;
-            const userType = 1030;
-            const joinDate = new Date().toISOString().slice(0, 10);
+    db.run(`CREATE TABLE IF NOT EXISTS activity_check_in (
+        CheckInID INTEGER PRIMARY KEY AUTOINCREMENT,
+        UserID INTEGER NOT NULL,
+        ReservationID INTEGER NOT NULL,
+        CheckInTime DATETIME,
+        FOREIGN KEY(UserID) REFERENCES users(UserId),
+        FOREIGN KEY(ReservationID) REFERENCES reservations(ReservationID)
+    )`);
 
-            const hashedPassword = bcrypt.hashSync(password, 10);
-
-            const query = 'INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address, JoinDate, UserType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-            db.run(query, [userName, hashedPassword, firstName, lastName, email, dateOfBirth, address, joinDate, userType], function(err) {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log(`Admin user created with ID ${this.lastID}`);
-                }
-            });
-        }
-    });
-
-    // Create activity types if they don't already exist
-    const activityTypes = ['Lap Swim', 'Aqua Aerobics', 'Swim Lessons', 'Family Swim', 'Swim Team', 'Water Polo'];
-    activityTypes.forEach((activity) => {
-        db.get("SELECT * FROM activity_types WHERE ActivityName = ?", [activity], (err, activityType) => {
-            if (err) {
-                console.error(err);
-            } else if (!activityType) {
-                const query = 'INSERT INTO activity_types (ActivityName) VALUES (?)';
-                db.run(query, [activity], function(err) {
-                    if (err) {
-                        console.error(err);
-                    } else {
-                        console.log(`Activity type created with ID ${this.lastID}`);
-                    }
-                });
-            }
-        });
-    });
 });
 
-
 module.exports = db;
-
-// const mysql = require('mysql');
-// require('dotenv').config();
-
-// // Create a MySQL connection pool (more efficient than single connections)
-// const pool = mysql.createPool({
-//   connectionLimit : 10, // You might want to adjust this number
-//   host     : process.env.RDS_HOSTNAME,
-//   user     : process.env.RDS_USERNAME,
-//   password : process.env.RDS_PASSWORD,
-//   database : process.env.RDS_DB_NAME,
-//   port     : process.env.RDS_PORT
-// });
-
-// // Verify the connection
-// pool.getConnection((err, connection) => {
-//   if (err) {
-//     return console.error('error: ' + err.message);
-//   }
-//   console.log('Connected to the MySQL server.');
-
-//   // Create tables or run other database setup here
-//   // ...
-
-//   // Release the connection back to the pool
-//   connection.release();
-// });
-
-// module.exports = pool;
+    
 

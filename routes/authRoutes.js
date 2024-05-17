@@ -17,21 +17,53 @@ router.get('/health', (req, res) => {
 
 // User Registration
 router.post('/register', authenticateToken, async (req, res) => {
-  console.log('payload', req.body)
-    const { userName, email, firstName, lastName, dateOfBirth, address, password, userType } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const joinDate = new Date().toISOString().slice(0, 10);
+  const { userName, email, firstName, lastName, dateOfBirth, address, password, userType } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const joinDate = new Date().toISOString().slice(0, 10);
 
-    const query = 'INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address, JoinDate, userType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-    db.run(query, [userName, hashedPassword, firstName, lastName, email, dateOfBirth, address, joinDate, userType], function(err) {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ message: 'Error registering new user', error: err.message });
-        } else {
-            res.status(201).json({ message: `New user created with ID ${this.lastID}` });
-        }
-    });
+  // Start transaction
+  db.serialize(() => {
+      db.run("BEGIN TRANSACTION;");
+
+      const userInsertQuery = 'INSERT INTO users (UserName, Password, FirstName, LastName, Email, DateOfBirth, Address, JoinDate, userType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      db.run(userInsertQuery, [userName, hashedPassword, firstName, lastName, email, dateOfBirth, address, joinDate, userType], function(userErr) {
+          if (userErr) {
+              console.error("Error registering new user:", userErr.message);
+              db.run("ROLLBACK;");
+              return res.status(500).json({ message: 'Error registering new user', error: userErr.message });
+          }
+
+          const newUserId = this.lastID; // 'this.lastID' captures the ID of the newly inserted user.
+
+          // Create payment account for new user
+          const accountQuery = `INSERT INTO payment_account (UserID, AccountBalance, PaymentDue, AccountCredit, AccountDebit) VALUES (?, 0, 0, 0, 0)`;
+          db.run(accountQuery, [newUserId], function(accountErr) {
+              if (accountErr) {
+                  console.error("Error creating payment account:", accountErr.message);
+                  db.run("ROLLBACK;");
+                  return res.status(500).json({ message: 'Error creating payment account', error: accountErr.message });
+              }
+
+              // Add initial payment history entry
+              const paymentHistoryQuery = `INSERT INTO payment_history (UserID, Amount, Date, Type, Description) VALUES (?, 0, ?, 'Initial', 'Initial account setup')`;
+              db.run(paymentHistoryQuery, [newUserId, new Date().toISOString().slice(0, 10)], function(historyErr) {
+                  if (historyErr) {
+                      console.error("Error creating initial payment history:", historyErr.message);
+                      db.run("ROLLBACK;");
+                      return res.status(500).json({ message: 'Error creating initial payment history', error: historyErr.message });
+                  }
+
+                  // Commit the transaction
+                  db.run("COMMIT;");
+                  res.status(201).json({ message: `New user created with ID ${newUserId}` });
+              });
+          });
+      });
+  });
 });
+
+
+
   
 
 // User Login
@@ -158,12 +190,9 @@ router.get('/users', authenticateToken, (req, res) => {
   });
 });
 
-//logout has to be post or get?
 
   router.post('/logout', (req, res) => {
     res.clearCookie('token');
-    console.log('Logged out successfully');
-    console.log('token', req.cookies.token);
     res.status(200).json({ message: 'Logged out successfully' });
   });
 
@@ -257,22 +286,19 @@ router.get('/reservations', authenticateToken, (req, res) => {
 // Fetch users Upcoming Reservations
 router.get('/upcoming/reservations', authenticateToken, (req, res) => {
   const userId = req.user.userId; // Assuming userID is stored in req.user
+  console.log('userId', userId);
 
   // Updated query to remove activity type filtering unless needed for future use
   let query = `
-    SELECT 
-      reservations.*, 
-      activity_types.ActivityName, 
-      lap_swim_schedules.Date, 
-      lap_swim_schedules.StartTime, 
-      lap_swim_schedules.EndTime
-    FROM reservations
+    SELECT * FROM reservations
     JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityID
     LEFT JOIN lap_swim_schedules ON reservations.ScheduleID = lap_swim_schedules.ScheduleID
     WHERE reservations.UserID = ? AND reservations.Date >= CURRENT_DATE
-    ORDER BY reservations.Date, lap_swim_schedules.StartTime
-  `;
+    ORDER BY reservations.Date, lap_swim_schedules.StartTime;
 
+
+   
+`;
   db.all(query, [userId], (err, reservations) => {
       if (err) {
           console.error(err);
@@ -298,18 +324,18 @@ router.put('/checkin/reservation', authenticateToken, (req, res) => {
 
 
 router.get('/account', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
+  userId = req.user.userId;
   const query = 'SELECT * FROM payment_account WHERE UserID = ?';
   db.get(query, [userId], (err, account) => {
       if (err) {
           console.error(err);
           return res.status(500).json({ error: 'Internal server error' });
       }
-      res.json(account);
+      res.json({ account});
       console.log('account', account);
   });
-}
-);
+});
+
 
 
 
