@@ -101,29 +101,29 @@ router.post('/login', async (req, res) => {
   });
 });
 
-// Check if user is logged in
-router.get('/checkLoggedIn', authenticateToken, (req, res) => {
-    const userId = req.user.userId; 
-    db.get('SELECT FirstName, UserType, Image  FROM users WHERE UserId = ?', [userId], (err, user) => {
-      if (err) {
-        res.status(500).json({ error: 'Internal server error' });
-      } else if (user) {
-        res.status(200).json({
-          success: true,
-          message: 'Token is valid',
-          user: {
-            firstName: user.FirstName,
-            userType: user.UserType,
-            profileImage: user.Image,
+// // Check if user is logged in
+// router.get('/checkLoggedIn', authenticateToken, (req, res) => {
+//     const userId = req.user.userId; 
+//     db.get('SELECT FirstName, UserType, Image  FROM users WHERE UserId = ?', [userId], (err, user) => {
+//       if (err) {
+//         res.status(500).json({ error: 'Internal server error' });
+//       } else if (user) {
+//         res.status(200).json({
+//           success: true,
+//           message: 'Token is valid',
+//           user: {
+//             firstName: user.FirstName,
+//             userType: user.UserType,
+//             profileImage: user.Image,
             
-          }
-        });
-      } else {
-        res.status(404).json({ error: 'User not found' });
-      }
-    });
-  }
-    );
+//           }
+//         });
+//       } else {
+//         res.status(404).json({ error: 'User not found' });
+//       }
+//     });
+//   }
+//     );
 
 
   // Update user profile
@@ -304,19 +304,63 @@ router.get('/upcoming/reservations', authenticateToken, (req, res) => {
   });
 });
 
-//check in reservation 
-router.put('/checkin/reservation', authenticateToken, (req, res) => {
-  const reservationId = req.params.id;
-  const query = 'UPDATE reservations SET IsCheckedIn = 1 WHERE ReservationID = ?';
-  db.run(query, [reservationId], (err) => {
-    if (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Internal server error' });
-    } else {
-      res.status(200).json({ message: `Reservation ${reservationId} checked in successfully` });
-    }
+
+// Check-in reservation
+router.put('/checkin/reservation/:reservationId', authenticateToken, (req, res) => {
+  const { reservationId } = req.params;
+  const checkInDate = new Date().toISOString();
+
+  db.serialize(() => {
+      db.run("BEGIN TRANSACTION;");
+
+      // Mark the reservation as checked in
+      const checkInQuery = `
+          UPDATE reservations 
+          SET IsCheckedIn = 1
+          WHERE ReservationID = ?;
+      `;
+      db.run(checkInQuery, [reservationId], function(err) {
+          if (err) {
+              console.error("Error checking in:", err.message);
+              db.run("ROLLBACK;");
+              return res.status(500).json({ error: 'Failed to check in', details: err.message });
+          }
+
+          // Insert into history
+          const historyQuery = `
+              INSERT INTO reservation_history (UserID, ReservationID, CheckInDate) 
+              SELECT UserID, ReservationID, ? FROM reservations WHERE ReservationID = ?;
+          `;
+          db.run(historyQuery, [checkInDate, reservationId], function(err) {
+              if (err) {
+                  console.error("Error saving to history:", err.message);
+                  db.run("ROLLBACK;");
+                  return res.status(500).json({ error: 'Failed to save history', details: err.message });
+              }
+
+              // Update payment account to add $5 charge
+              const billingQuery = `
+                  UPDATE payment_account 
+                  SET AccountBalance = AccountBalance + 5, PaymentDue = PaymentDue + 5
+                  WHERE UserID = (SELECT UserID FROM reservations WHERE ReservationID = ?);
+              `;
+              db.run(billingQuery, [reservationId], function(err) {
+                  if (err) {
+                      console.error("Error updating account balance:", err.message);
+                      db.run("ROLLBACK;");
+                      return res.status(500).json({ error: 'Failed to update account balance', details: err.message });
+                  }
+
+                  db.run("COMMIT;");
+                  res.status(200).json({ message: 'Check-in successful, history updated, and user billed $5' });
+              });
+          });
+      });
   });
 });
+
+
+
 
 
 router.get('/account', authenticateToken, (req, res) => {
@@ -332,26 +376,31 @@ router.get('/account', authenticateToken, (req, res) => {
 });
 
 
-
-
+// Fetch Historical Reservations with User Details
 // Fetch Historical Reservations
 router.get('/history', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.userId; // Assuming authenticateToken middleware sets this
   const query = `
-      SELECT * FROM reservations
-      JOIN activity_types ON reservations.ActivityTypeID = activity_types.ActivityTypeID
-      LEFT JOIN lap_swim_schedules ON reservations.ScheduleID = lap_swim_schedules.ScheduleID
-      WHERE reservations.UserID = ? AND reservations.Date < CURRENT_DATE
-      ORDER BY reservations.Date DESC, lap_swim_schedules.StartTime;
+    SELECT rh.*, at.ActivityName, ls.StartTime, ls.EndTime, ls.Date,
+           u.FirstName, u.LastName, u.Email
+    FROM reservation_history rh
+    JOIN reservations r ON rh.ReservationID = r.ReservationID
+    JOIN users u ON r.UserID = u.UserId
+    JOIN activity_types at ON r.ActivityTypeID = at.ActivityID
+    LEFT JOIN lap_swim_schedules ls ON r.ScheduleID = ls.ScheduleID
+    WHERE r.UserID = ? AND ls.Date < CURRENT_DATE
+    ORDER BY ls.Date DESC, ls.StartTime;
   `;
-  db.all(query, [userId], (err, reservations) => {
+  db.all(query, [userId], (err, historicalReservations) => {
       if (err) {
-          console.error(err);
-          return res.status(500).json({ error: 'Internal server error' });
+          console.error("Error fetching historical reservations:", err);
+          return res.status(500).json({ error: 'Internal server error', details: err.message });
       }
-      res.json({ historicalReservations: reservations });
+      res.json({ historicalReservations });
   });
 });
+
+
 
 router.get('/activities', (req, res) => {
   const query = 'SELECT ActivityID as id, ActivityName as name FROM activity_types';
@@ -363,8 +412,6 @@ router.get('/activities', (req, res) => {
       res.json(activities);
   });
 });
-
-
 
 
   module.exports = router;

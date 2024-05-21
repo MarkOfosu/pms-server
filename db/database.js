@@ -11,7 +11,6 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         console.error('Failed to connect to the database:', err.message);
     } else {
         console.log('Connected to the SQLite database.');
-        initializeUsers(db);
     }
 });
 
@@ -34,14 +33,13 @@ db.serialize(() => {
 
     //Create PayementAccounts table to store balances, payment due, and payment history
     db.run(`CREATE TABLE IF NOT EXISTS payment_account (
-        AccountID INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserID INTEGER NOT NULL,
-        AccountBalance REAL CHECK(AccountBalance >= 0),
-        PaymentDue REAL CHECK(PaymentDue >= 0),
-        AccountCredit REAL,
-        AccountDebit REAL,
-        FOREIGN KEY(UserID) REFERENCES users(UserId),
-        CHECK(AccountBalance >= PaymentDue)
+    AccountID INTEGER PRIMARY KEY AUTOINCREMENT,
+    UserID INTEGER NOT NULL,
+    AccountBalance REAL, 
+    PaymentDue REAL CHECK(PaymentDue >= 0),  
+    AccountCredit REAL DEFAULT 0,
+    AccountDebit REAL DEFAULT 0,
+    FOREIGN KEY(UserID) REFERENCES users(UserId)
     )`);
 
 
@@ -108,14 +106,21 @@ db.serialize(() => {
         ActivityName TEXT NOT NULL UNIQUE
     )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS activity_check_in (
-        CheckInID INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserID INTEGER NOT NULL,
-        ReservationID INTEGER NOT NULL,
-        CheckInTime DATETIME,
+    db.run(`CREATE TABLE IF NOT EXISTS reservation_history (
+        HistoryID INTEGER PRIMARY KEY AUTOINCREMENT,
+        UserID INTEGER,
+        ReservationID INTEGER,
+        CheckInDate DATETIME,
         FOREIGN KEY(UserID) REFERENCES users(UserId),
         FOREIGN KEY(ReservationID) REFERENCES reservations(ReservationID)
     )`);
+    
+
+   try {
+        initializeUsers(db);
+    } catch (error) {
+        console.error("Failed to initialize users:", error);
+    }
 
 });
 

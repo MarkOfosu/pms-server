@@ -4,7 +4,9 @@ const bodyParser = require('body-parser');
 const authRoutes = require('./routes/authRoutes');
 const authenticateToken = require('./middleware/authenticateToken'); 
 const cookieParser = require('cookie-parser');
+const cron = require('node-cron'); // Import node-cron
 const path = require('path');
+const {cleanupPastReservations} = require('./db/dbActions');
 
 require('dotenv').config(); 
 
@@ -21,9 +23,18 @@ const corsOptions = {
     optionsSuccessStatus: 200
 };
 
-
 app.use(cors(corsOptions));
 app.use('/api/auth', authRoutes);
+
+const performCleanup = () => {
+    cleanupPastReservations(); 
+};
+
+// Schedule the cleanup job to run every hour
+cron.schedule('0 * * * *', performCleanup, {
+    scheduled: true,
+    timezone: 'America/Los_Angeles'
+});
 
 
 const port = process.env.PORT || 80;

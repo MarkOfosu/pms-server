@@ -162,6 +162,61 @@ function createPaymentHistoryIfNeeded(db, userId) {
     });
 }
 
+function cleanupPastReservations() {
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION;");
+
+        // Move checked-in reservations to the history table
+        const moveCheckedInQuery = `
+            INSERT INTO reservation_history (UserID, ReservationID, CheckInDate)
+            SELECT UserID, ReservationID, Date
+            FROM reservations
+            WHERE IsCheckedIn = 1 AND Date < CURRENT_DATE;
+        `;
+        db.run(moveCheckedInQuery, function(err) {
+            if (err) {
+                console.error("Error moving checked-in reservations to history:", err.message);
+                db.run("ROLLBACK;");
+                return;
+            }
+
+            // Delete the moved reservations from the original table
+            const deleteMovedQuery = `
+                DELETE FROM reservations
+                WHERE IsCheckedIn = 1 AND Date < CURRENT_DATE;
+            `;
+            db.run(deleteMovedQuery, function(err) {
+                if (err) {
+                    console.error("Error deleting old checked-in reservations:", err.message);
+                    db.run("ROLLBACK;");
+                    return;
+                }
+
+                // Delete unchecked past reservations
+                const deleteUncheckedQuery = `
+                    DELETE FROM reservations
+                    WHERE IsCheckedIn = 0 AND Date < CURRENT_DATE;
+                `;
+                db.run(deleteUncheckedQuery, function(err) {
+                    if (err) {
+                        console.error("Error deleting unchecked past reservations:", err.message);
+                        db.run("ROLLBACK;");
+                        return;
+                    }
+
+                    db.run("COMMIT;");
+                    console.log("Cleanup completed successfully.");
+                });
+            });
+        });
+    });
+}
+
+module.exports = {
+    cleanupPastReservations
+};
+
+
 module.exports = {
     initializeUsers
 };
