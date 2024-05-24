@@ -376,7 +376,6 @@ router.get('/account', authenticateToken, (req, res) => {
 });
 
 
-// Fetch Historical Reservations with User Details
 // Fetch Historical Reservations
 router.get('/history', authenticateToken, (req, res) => {
   const userId = req.user.userId; // Assuming authenticateToken middleware sets this

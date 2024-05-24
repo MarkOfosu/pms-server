@@ -6,6 +6,8 @@ COPY package.json ./
 
 RUN npm install
 
+RUN npm install && npm install -g nodemon
+
 # Set environment variables
 ENV NODE_ENV=production \
     PORT=80 \
@@ -29,4 +31,7 @@ COPY . .
 CMD ["npm", "run", "start"]
 
 EXPOSE 80
+
+
+
 
