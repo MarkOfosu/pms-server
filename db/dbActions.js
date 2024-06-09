@@ -1,14 +1,15 @@
 const bcrypt = require('bcryptjs');
+const db = require('./database');
 
-function initializeUsers(db) {
-    createAdminUser(db);
-    createPublicUser(db);
-    createActivityTypes(db);
-    createLapSwimSchedules(db);
-    ensureFinancialRecords(db);
+function initializeUsers() {
+    createAdminUser();
+    createPublicUser();
+    createActivityTypes();
+    createLapSwimSchedules();
+    ensureFinancialRecords();
 }
 
-function createAdminUser(db) {
+function createAdminUser() {
     const userType = 1030; // Admin user type
     db.get("SELECT UserId FROM users WHERE UserType = ?", [userType], (err, user) => {
         if (err) {
@@ -38,7 +39,7 @@ function createAdminUser(db) {
     });
 }
 
-function createPublicUser(db) {
+function createPublicUser() {
     const userType = 1020; // Public user type
     db.get("SELECT UserId FROM users WHERE UserType = ?", [userType], (err, user) => {
         if (err) {
@@ -68,7 +69,7 @@ function createPublicUser(db) {
     });
 }
 
-function createActivityTypes(db) {
+function createActivityTypes() {
     const activityTypes = ['Lap Swim', 'Aqua Aerobics', 'Swim Lessons', 'Family Swim', 'Swim Team', 'Water Polo'];
     activityTypes.forEach(activity => {
         db.get("SELECT ActivityID FROM activity_types WHERE ActivityName = ?", [activity], (err, exists) => {
@@ -89,13 +90,32 @@ function createActivityTypes(db) {
     });
 }
 
-function createLapSwimSchedules(db) {
-    const lapSwimSchedules = [
-        { Date: '2024-07-01', StartTime: '07:00:00', EndTime: '08:00:00', LaneNumber: 1, MaxSwimmers: 5 },
-        { Date: '2024-06-01', StartTime: '08:00:00', EndTime: '09:00:00', LaneNumber: 1, MaxSwimmers: 5 },
-        { Date: '2024-06-01', StartTime: '10:00:00', EndTime: '11:00:00', LaneNumber: 1, MaxSwimmers: 5 }
-    ];
-    lapSwimSchedules.forEach(schedule => {
+function createLapSwimSchedules() {
+    const startTimes = ['07:00:00', '08:00:00', '10:00:00'];
+    const endTimes = ['08:00:00', '09:00:00', '11:00:00'];
+    const laneNumber = 1;
+    const maxSwimmers = 5;
+
+    const today = new Date();
+    const schedules = [];
+
+    for (let i = 0; i < 5; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const formattedDate = date.toISOString().slice(0, 10);
+
+        for (let j = 0; j < startTimes.length; j++) {
+            schedules.push({
+                Date: formattedDate,
+                StartTime: startTimes[j],
+                EndTime: endTimes[j],
+                LaneNumber: laneNumber,
+                MaxSwimmers: maxSwimmers
+            });
+        }
+    }
+
+    schedules.forEach(schedule => {
         db.get("SELECT ScheduleID FROM lap_swim_schedules WHERE Date = ? AND StartTime = ? AND EndTime = ?", [schedule.Date, schedule.StartTime, schedule.EndTime], (err, exists) => {
             if (err) {
                 console.error("Error checking lap swim schedule:", err.message);
@@ -114,18 +134,19 @@ function createLapSwimSchedules(db) {
     });
 }
 
-function ensureFinancialRecords(db) {
+
+function ensureFinancialRecords() {
     db.each("SELECT UserId FROM users", [], (err, row) => {
         if (err) {
             console.error("Error fetching users for financial records:", err.message);
             return;
         }
-        createPaymentAccountIfNeeded(db, row.UserId);
-        createPaymentHistoryIfNeeded(db, row.UserId);
+        createPaymentAccountIfNeeded(row.UserId);
+        createPaymentHistoryIfNeeded(row.UserId);
     });
 }
 
-function createPaymentAccountIfNeeded(db, userId) {
+function createPaymentAccountIfNeeded(userId) {
     db.get("SELECT * FROM payment_account WHERE UserID = ?", [userId], (err, account) => {
         if (err) {
             console.error("Error checking payment account:", err.message);
@@ -143,7 +164,7 @@ function createPaymentAccountIfNeeded(db, userId) {
     });
 }
 
-function createPaymentHistoryIfNeeded(db, userId) {
+function createPaymentHistoryIfNeeded(userId) {
     db.get("SELECT * FROM payment_history WHERE UserID = ?", [userId], (err, history) => {
         if (err) {
             console.error("Error checking payment history:", err.message);
@@ -163,60 +184,39 @@ function createPaymentHistoryIfNeeded(db, userId) {
 }
 
 function cleanupPastReservations() {
-    db.serialize(() => {
-        db.run("BEGIN TRANSACTION;");
+    const cleanupQuery = `
+        BEGIN TRANSACTION;
 
-        // Move checked-in reservations to the history table
-        const moveCheckedInQuery = `
-            INSERT INTO reservation_history (UserID, ReservationID, CheckInDate)
-            SELECT UserID, ReservationID, Date
-            FROM reservations
-            WHERE IsCheckedIn = 1 AND Date < CURRENT_DATE;
-        `;
-        db.run(moveCheckedInQuery, function(err) {
-            if (err) {
-                console.error("Error moving checked-in reservations to history:", err.message);
-                db.run("ROLLBACK;");
-                return;
-            }
+        -- Move checked-in reservations to the history table
+        INSERT INTO reservation_history (UserID, ReservationID, CheckInDate)
+        SELECT UserID, ReservationID, Date
+        FROM reservations
+        WHERE IsCheckedIn = 1 AND Date < CURRENT_DATE;
 
-            // Delete the moved reservations from the original table
-            const deleteMovedQuery = `
-                DELETE FROM reservations
-                WHERE IsCheckedIn = 1 AND Date < CURRENT_DATE;
-            `;
-            db.run(deleteMovedQuery, function(err) {
-                if (err) {
-                    console.error("Error deleting old checked-in reservations:", err.message);
-                    db.run("ROLLBACK;");
-                    return;
-                }
+        -- Delete the moved reservations from the original table
+        DELETE FROM reservations
+        WHERE IsCheckedIn = 1 AND Date < CURRENT_DATE;
 
-                // Delete unchecked past reservations
-                const deleteUncheckedQuery = `
-                    DELETE FROM reservations
-                    WHERE IsCheckedIn = 0 AND Date < CURRENT_DATE;
-                `;
-                db.run(deleteUncheckedQuery, function(err) {
-                    if (err) {
-                        console.error("Error deleting unchecked past reservations:", err.message);
-                        db.run("ROLLBACK;");
-                        return;
-                    }
+        -- Delete unchecked past reservations
+        DELETE FROM reservations
+        WHERE IsCheckedIn = 0 AND Date < CURRENT_DATE;
 
-                    db.run("COMMIT;");
-                    console.log("Cleanup completed successfully.");
-                });
-            });
-        });
+        -- Delete old lap swim schedules
+        DELETE FROM lap_swim_schedules
+        WHERE Date < CURRENT_DATE;
+
+        COMMIT;
+    `;
+
+    db.run(cleanupQuery, function(err) {
+        if (err) {
+            console.error("Error during cleanup:", err.message);
+            db.run("ROLLBACK;");
+        } else {
+            console.log("Cleanup completed successfully.");
+        }
     });
 }
 
-module.exports = {
-    cleanupPastReservations
-};
 
-
-module.exports = {
-    initializeUsers
-};
+module.exports = { initializeUsers, cleanupPastReservations };

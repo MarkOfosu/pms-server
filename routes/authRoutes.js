@@ -85,45 +85,19 @@ router.post('/login', async (req, res) => {
               const token = jwt.sign({ userId: user.UserId }, process.env.JWT_SECRET, { expiresIn: '1h' });
               res.cookie('token', token, {
                   httpOnly: true,
-                  secure: false, // should be true in production if using HTTPS
-                  maxAge: 3600000 // 1 hour
+                  secure: false, //  true in production when using HTTPS
+                  maxAge: 3600000, // 1 hour
               });
               res.status(200).json({
                   message: 'Logged in successfully',
                   firstName: user.FirstName,
                   userType: user.UserType,
-                  profileImage: user.Image,
-                  token : token
-                    
+                  profileImage: user.Image   
               });
           }
       }
   });
 });
-
-// // Check if user is logged in
-// router.get('/checkLoggedIn', authenticateToken, (req, res) => {
-//     const userId = req.user.userId; 
-//     db.get('SELECT FirstName, UserType, Image  FROM users WHERE UserId = ?', [userId], (err, user) => {
-//       if (err) {
-//         res.status(500).json({ error: 'Internal server error' });
-//       } else if (user) {
-//         res.status(200).json({
-//           success: true,
-//           message: 'Token is valid',
-//           user: {
-//             firstName: user.FirstName,
-//             userType: user.UserType,
-//             profileImage: user.Image,
-            
-//           }
-//         });
-//       } else {
-//         res.status(404).json({ error: 'User not found' });
-//       }
-//     });
-//   }
-//     );
 
 
   // Update user profile
