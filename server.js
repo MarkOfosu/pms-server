@@ -16,18 +16,25 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// CORS configuration
 const corsOptions = {
     origin: [
         'http://pool-ms.com',
         'http://www.pool-ms.com',
         'https://pool-ms.com',
         'https://www.pool-ms.com',
-        'http://localhost:3001',
+        'http://localhost',
+        'http://192.168.1.153',
+        'http://192.168.1.153:32778',
+        'http://192.168.1.153:32793'
     ],
-    credentials: true, 
+    credentials: true,
+    optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));  // Preflight requests
+
 app.use('/api/auth', authRoutes);
 
 const performCleanup = () => {

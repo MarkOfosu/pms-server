@@ -44,7 +44,7 @@ RUN npm install && npm install -g nodemon
 
 # Set environment variables
 ENV NODE_ENV=production \
-    PORT=80 \
+    PORT=5000 \
     TOKEN_KEY="Secret 123" \
     REACT_APP_BACKEND_URL="http://api.pool-ms.com" \
     DATABASE_URL="sqlite:///./db.sqlite" \
@@ -62,6 +62,6 @@ ENV NODE_ENV=production \
 # Copy the rest of the application
 COPY . .
 
-EXPOSE 80
+EXPOSE 5000
 
 CMD ["npm", "run", "start"]
