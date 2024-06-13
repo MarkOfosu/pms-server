@@ -46,7 +46,6 @@ RUN npm install && npm install -g nodemon
 ENV NODE_ENV=production \
     PORT=5000 \
     TOKEN_KEY="Secret 123" \
-    REACT_APP_BACKEND_URL="http://api.pool-ms.com" \
     DATABASE_URL="sqlite:///./db.sqlite" \
     JWT_SECRET="sljfsdjfouwouwrnwlrn3qw9eqeqeqlrnlncoj2330937r969qwe" \
     SESSION_SECRET="khkhk489498309dskhf0" \

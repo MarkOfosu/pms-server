@@ -14,26 +14,12 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('src/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// CORS configuration
-const corsOptions = {
-    origin: [
-        'http://pool-ms.com',
-        'http://www.pool-ms.com',
-        'https://pool-ms.com',
-        'https://www.pool-ms.com',
-        'http://localhost',
-        'http://192.168.1.153',
-        'http://192.168.1.153:32778',
-        'http://192.168.1.153:32793'
-    ],
-    credentials: true,
-    optionsSuccessStatus: 200
-};
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));  // Preflight requests
+
+app.use(cors());
 
 app.use('/api/auth', authRoutes);
 
@@ -47,7 +33,7 @@ cron.schedule('0 * * * *', performCleanup, {
     timezone: 'America/Los_Angeles'
 });
 
-const port = process.env.PORT || 80;
+const port = process.env.PORT || 5001;
 
 app.listen(port, () => {
     initializeUsers();
