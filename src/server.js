@@ -17,11 +17,13 @@ app.use(cookieParser());
 app.use('src/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-
-
 app.use(cors());
 
 app.use('/api/auth', authRoutes);
+
+app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
 
 const performCleanup = () => {
     cleanupPastReservations(); 
@@ -37,5 +39,7 @@ const port = process.env.PORT || 5001;
 
 app.listen(port, () => {
     initializeUsers();
+
+    cleanupPastReservations();
     console.log(`Server is running on port ${port}`);
 });
