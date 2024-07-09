@@ -1,99 +1,115 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-const dbPath = path.resolve(__dirname, 'db.sqlite');
+const pool = new Pool({
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT
+});
 
-const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-    if (err) {
-        console.error('Failed to connect to the database:', err.message);
-    } else {
-        console.log('Connected to the SQLite database.');
+async function createTables() {
+    const createUsersTable = `
+        CREATE TABLE IF NOT EXISTS users (
+            UserId SERIAL PRIMARY KEY,
+            UserName VARCHAR(255) UNIQUE NOT NULL,
+            Password VARCHAR(255) NOT NULL,
+            FirstName VARCHAR(255) NOT NULL,
+            LastName VARCHAR(255) NOT NULL,
+            Email VARCHAR(255) UNIQUE NOT NULL,
+            DateOfBirth DATE NOT NULL,
+            Address VARCHAR(255) NOT NULL,
+            JoinDate DATE NOT NULL,
+            UserType INT NOT NULL,
+            Image VARCHAR(255)
+        );
+    `;
+
+    const createPaymentAccountTable = `
+        CREATE TABLE IF NOT EXISTS payment_account (
+            AccountID SERIAL PRIMARY KEY,
+            UserID INT NOT NULL,
+            AccountBalance DECIMAL(10, 2) NOT NULL,
+            PaymentDue DECIMAL(10, 2) NOT NULL,
+            AccountCredit DECIMAL(10, 2) NOT NULL,
+            AccountDebit DECIMAL(10, 2) NOT NULL,
+            FOREIGN KEY (UserID) REFERENCES users(UserId) ON DELETE CASCADE
+        );
+    `;
+
+    const createPaymentHistoryTable = `
+        CREATE TABLE IF NOT EXISTS payment_history (
+            HistoryID SERIAL PRIMARY KEY,
+            UserID INT NOT NULL,
+            Amount DECIMAL(10, 2) NOT NULL,
+            Date DATE NOT NULL,
+            Type VARCHAR(50) NOT NULL,
+            Description TEXT NOT NULL,
+            FOREIGN KEY (UserID) REFERENCES users(UserId) ON DELETE CASCADE
+        );
+    `;
+
+    const createActivityTypesTable = `
+        CREATE TABLE IF NOT EXISTS activity_types (
+            ActivityID SERIAL PRIMARY KEY,
+            ActivityName VARCHAR(255) UNIQUE NOT NULL
+        );
+    `;
+
+    const createLapSwimSchedulesTable = `
+        CREATE TABLE IF NOT EXISTS lap_swim_schedules (
+            ScheduleID SERIAL PRIMARY KEY,
+            Date DATE NOT NULL,
+            StartTime TIME NOT NULL,
+            EndTime TIME NOT NULL,
+            LaneNumber INT NOT NULL,
+            MaxSwimmers INT NOT NULL
+        );
+    `;
+
+    const createReservationHistoryTable = `
+        CREATE TABLE IF NOT EXISTS reservation_history (
+            HistoryID SERIAL PRIMARY KEY,
+            UserID INT NOT NULL,
+            ReservationID INT NOT NULL,
+            CheckInDate DATE NOT NULL,
+            FOREIGN KEY (UserID) REFERENCES users(UserId) ON DELETE CASCADE,
+            FOREIGN KEY (ReservationID) REFERENCES reservations(ReservationID) ON DELETE CASCADE
+        );
+    `;
+
+    const createReservationsTable = `
+        CREATE TABLE IF NOT EXISTS reservations (
+            ReservationID SERIAL PRIMARY KEY,
+            UserID INT NOT NULL,
+            ActivityTypeID INT NOT NULL,
+            ScheduleID INT NOT NULL,
+            Status VARCHAR(50) NOT NULL,
+            StartTime TIME NOT NULL,
+            EndTime TIME NOT NULL,
+            Date DATE NOT NULL,
+            IsCheckedIn BOOLEAN DEFAULT FALSE,
+            FOREIGN KEY (UserID) REFERENCES users(UserId) ON DELETE CASCADE,
+            FOREIGN KEY (ActivityTypeID) REFERENCES activity_types(ActivityID) ON DELETE CASCADE,
+            FOREIGN KEY (ScheduleID) REFERENCES lap_swim_schedules(ScheduleID) ON DELETE CASCADE
+        );
+    `;
+
+    try {
+        const client = await pool.connect();
+        await client.query(createUsersTable);
+        await client.query(createPaymentAccountTable);
+        await client.query(createPaymentHistoryTable);
+        await client.query(createActivityTypesTable);
+        await client.query(createLapSwimSchedulesTable);
+        await client.query(createReservationsTable); 
+        await client.query(createReservationHistoryTable);
+        client.release();
+        console.log('Tables created successfully');
+    } catch (err) {
+        console.error('Error creating tables:', err.message);
     }
-});
+}
 
-db.serialize(() => {
-    // Tables creation
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        UserId INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserName TEXT NOT NULL UNIQUE,
-        Password TEXT NOT NULL,
-        Email TEXT NOT NULL UNIQUE,
-        FirstName TEXT NOT NULL,
-        LastName TEXT NOT NULL,
-        DateOfBirth DATE,
-        Address TEXT,
-        JoinDate DATE,
-        UserType INTEGER,
-        Image BLOB
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS payment_account (
-        AccountID INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserID INTEGER NOT NULL,
-        AccountBalance REAL, 
-        PaymentDue REAL CHECK(PaymentDue >= 0),  
-        AccountCredit REAL DEFAULT 0,
-        AccountDebit REAL DEFAULT 0,
-        FOREIGN KEY(UserID) REFERENCES users(UserId)
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS profiles (
-        ProfileID INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserID INTEGER NOT NULL,
-        AccountBalance REAL,
-        PaymentDue REAL,
-        FOREIGN KEY(UserID) REFERENCES users(UserId)
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS reservations (
-        ReservationID INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserID INTEGER NOT NULL,
-        ActivityTypeID INTEGER NOT NULL,
-        ScheduleID INTEGER,
-        StartTime DATETIME,
-        EndTime DATETIME,
-        Date DATE,
-        Status TEXT CHECK(Status IN ('open', 'closed')),
-        IsCheckedIn BOOLEAN DEFAULT 0,
-        FOREIGN KEY(UserID) REFERENCES users(UserId),
-        FOREIGN KEY(ActivityTypeID) REFERENCES activity_types(ActivityTypeID),
-        FOREIGN KEY(ScheduleID) REFERENCES lap_swim_schedules(ScheduleID)
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS activity_check_in (
-        CheckInID INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserID INTEGER NOT NULL,
-        ReservationID INTEGER NOT NULL,
-        CheckInTime DATETIME,
-        FOREIGN KEY(UserID) REFERENCES users(UserId),
-        FOREIGN KEY(ReservationID) REFERENCES reservations(ReservationID)
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS payment_history (
-        PaymentID INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserID INTEGER NOT NULL,
-        Amount REAL,
-        Date DATE,
-        Type TEXT,
-        Description TEXT,
-        FOREIGN KEY(UserID) REFERENCES users(UserId)
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS lap_swim_schedules (
-        ScheduleID INTEGER PRIMARY KEY AUTOINCREMENT,
-        Date DATE,
-        StartTime Time,
-        EndTime TIme,
-        LaneNumber INTEGER,
-        MaxSwimmers INTEGER
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS activity_types (
-        ActivityID INTEGER PRIMARY KEY,
-        ActivityName TEXT NOT NULL UNIQUE
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS reservation_history (
-        HistoryID INTEGER PRIMARY KEY AUTOINCREMENT,
-        UserID INTEGER,
-        ReservationID INTEGER,
-        CheckInDate DATETIME,
-        FOREIGN KEY(UserID) REFERENCES users(UserId),
-        FOREIGN KEY(ReservationID) REFERENCES reservations(ReservationID)
-    )`);
-});
-
-module.exports = db;
+module.exports = { createTables, pool };
