@@ -33,7 +33,7 @@ const performCleanup = async () => {
     }
 };
 
-// Schedule the cleanup job to run every hour
+
 cron.schedule('0 * * * *', performCleanup, {
     scheduled: true,
     timezone: 'America/Los_Angeles'

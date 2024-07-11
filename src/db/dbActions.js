@@ -191,4 +191,4 @@ async function cleanupPastReservations() {
     }
 }
 
-module.exports = { initializeUsers, cleanupPastReservations, createTables }; // Export createTables here
+module.exports = { initializeUsers, cleanupPastReservations, createTables };
