@@ -9,6 +9,8 @@ const pool = new Pool({
     port: process.env.DB_PORT
 });
 
+
+
 async function createTables() {
     const createUsersTable = `
         CREATE TABLE IF NOT EXISTS users (

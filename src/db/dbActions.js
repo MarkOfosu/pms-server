@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { createTables, pool } = require('./database'); // Adjust the path according to your file structure
+const { createTables, pool } = require('./database'); 
 
 // Initialize users and other data
 async function initializeUsers() {
