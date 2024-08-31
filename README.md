@@ -3,10 +3,8 @@
 This is the backend server for the Pool Management System, an ongoing project for managing a pool facility, including user registrations, reservations, and more.
 
 
-## 🌐 Test Running Application
+## 🌐 Test Running Application @ https://www.pool-ms.com/
 ```plaintext
-Test the application at:
-https://www.pool-ms.com/
 
 Test Credentials
 Admin User
