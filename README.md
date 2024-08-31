@@ -1,60 +1,65 @@
-### Pool Management System Server (pms-server)
+# `Pool Management System Server (pms-server)`
+
 This is the backend server for the Pool Management System, an ongoing project for managing a pool facility, including user registrations, reservations, and more.
 
-### Test running app @ https://www.pool-ms.com/
-### Test with user Credentials
-### Admin User
+## 🌐 Test Running Application
+
+Test the application at:
+
+```plaintext
+https://www.pool-ms.com/
+Test Credentials
+Admin User
 Username: admin
-
 Password: 123456
-
-### Regular User
+Regular User
 Username: user1
-
 Password: 123456
-
-
-### Features
+✨ Features
 User registration and authentication
 Reservation system for pool activities
 Check-in and activity tracking
-
-
-### Technologies Used
+🛠 Technologies Used
 Node.js
 Express
 PostgreSQL
 Nginx
-
-
-### Getting Started:
+🚀 Getting Started
 Prerequisites
+Ensure you have the following installed:
+
 Node.js
-PostgreSQL instance
+PostgreSQL
+1. Clone the Repositories
+Clone the server and client repositories into the same project directory:
 
-### Clone the repository pms-server and pms-client in the same project directory 
 git clone https://github.com/your-username/pms-server.git
-git clone https://github.com/your-username/pms-client.git
 
-Install the dependencies for both the client and server:
+2. Install Dependencies
+Navigate into both the server directory and install the necessary dependencies:
+
+# For the server
+cd pms-server
 npm install
 
 
-### Create a .env and use varriables in the .env.example
+3. Set Up Environment Variables
+Create a .env file in the pms-server directory using the variables in .env.example.
 
+4. Set Up PostgreSQL Database
+Create a PostgreSQL database and update the .env file with the correct credentials.
 
-### create and start a  postgres Db and update the env file with the right credentials
+5. Update Frontend Build
+The frontend is served by the backend. To update the frontend build:
 
+# Run this command in the client directory
+npm run build
 
-### Update frontend build 
-#The frontend is being served at the backend
-# build to update the build at the backend
-npm run build at the cleint directory
-
-### Start the Server in the server directory
+6. Start the Server
+Navigate to the pms-server directory and start the server:
 npm run server
 
-#### Open the running app
-http://localhost:5000.
 
-
+7. Access the Application
+Open your browser and go to:
+http://localhost:5000
