@@ -8,22 +8,31 @@ Test the application at:
 
 ```plaintext
 https://www.pool-ms.com/
+
 Test Credentials
 Admin User
 Username: admin
+
 Password: 123456
+
 Regular User
 Username: user1
+
 Password: 123456
+
 ✨ Features
 User registration and authentication
 Reservation system for pool activities
 Check-in and activity tracking
+
+
 🛠 Technologies Used
 Node.js
 Express
 PostgreSQL
 Nginx
+
+
 🚀 Getting Started
 Prerequisites
 Ensure you have the following installed:
