@@ -2,19 +2,21 @@
 This is the backend server for the Pool Management System, an ongoing project for managing a pool facility, including user registrations, reservations, and more.
 
 ### Test running app @ https://www.pool-ms.com/
-### Test User Credentials
+### Test with user Credentials
 ### Admin User
 Username: admin
+
 Password: 123456
+
 ### Regular User
 Username: user1
+
 Password: 123456
 
 
 ### Features
 User registration and authentication
 Reservation system for pool activities
-Payment account management
 Check-in and activity tracking
 
 
@@ -26,7 +28,6 @@ Nginx
 
 
 ### Getting Started:
-
 Prerequisites
 Node.js
 PostgreSQL instance
